@@ -1,0 +1,160 @@
+/* ==========================================================
+   迴歸分析知識庫：圖文講義共用樣式（筆記本風格，可捲動閱讀）
+   與簡報同一套配色：黑灰白＋桃紅 #FF2E7E，米白方格紙
+   使用方式：講義 html 放在 outputs/handouts/，
+     <link rel="stylesheet" href="theme/handout.css">
+     <script src="../slides/theme/slides.js"></script>   ← 只借用繪圖工具 SK
+   插圖路徑（從 outputs/handouts/*.html 出發）：../../assets/<檔名>.avif
+   ========================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap");
+
+:root{
+  --black:#0e0e10; --ink:#1b1b1f; --g700:#3f3f46; --g500:#71717a; --g400:#a1a1aa; --g300:#d4d4d8; --g200:#e4e4e7; --g100:#f4f4f5; --white:#fff;
+  --paper:#fbf9f4; --grid:rgba(60,60,70,.07); --desk:#dcd9d2; --tape:rgba(210,210,215,.8);
+  --pink:#ff2e7e; --pink-ink:#d6005c; --pink-soft:#ffe3ee;
+  --serif:"Noto Serif TC","Songti TC",serif; --sans:"Inter","Noto Sans TC",system-ui,sans-serif; --hand:"Caveat","Noto Sans TC",cursive;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--desk);color:var(--ink);font-family:var(--sans);line-height:1.8;font-size:17px;-webkit-font-smoothing:antialiased}
+
+/* ---------- 紙張 ---------- */
+.page{max-width:960px;margin:32px auto;background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px;
+  border-radius:6px 14px 14px 6px;box-shadow:0 24px 50px rgba(40,36,30,.22);padding:0 72px 64px 104px;position:relative;overflow:hidden}
+.page::before{content:"";position:absolute;left:28px;top:28px;bottom:28px;width:22px;z-index:2;
+  background:radial-gradient(circle at 11px 11px,var(--desk) 7px,rgba(0,0,0,.12) 8px,transparent 9px) 0 0/22px 48px repeat-y}
+
+/* ---------- 封面 ---------- */
+.cover{background:var(--black);color:var(--white);margin:0 -72px 40px -104px;padding:64px 160px 56px 104px;position:relative;display:flex;gap:40px;align-items:center}
+.cover::after{content:"";position:absolute;top:0;bottom:0;right:72px;width:20px;background:var(--pink)}
+.cover .ctext{flex:1;min-width:0}
+.cover .kicker{font-family:var(--hand);font-size:26px;color:var(--g400)}
+.cover h1{font-family:var(--serif);font-size:52px;font-weight:900;letter-spacing:.04em;line-height:1.2;margin-top:4px}
+.cover .sub{font-size:22px;color:var(--g300);margin-top:6px}
+.cover .bar{width:90px;height:6px;background:var(--pink);margin:24px 0 18px}
+.cover .meta{font-size:15px;color:var(--g400);line-height:1.9}
+.cover .art{width:240px;flex:none;position:relative;z-index:1}
+
+/* ---------- 目錄 ---------- */
+.toc{background:var(--white);border:1px solid rgba(0,0,0,.06);box-shadow:0 8px 18px rgba(40,36,30,.08);padding:20px 26px;margin:0 0 12px}
+.toc h2{font-size:15px;margin:0 0 8px;font-family:var(--sans);font-weight:700;color:var(--g500);letter-spacing:.1em}
+.toc ol{list-style:none;padding:0;columns:2;column-gap:32px}
+.toc li{margin:4px 0;break-inside:avoid}
+.toc a{color:var(--ink);text-decoration:none}
+.toc a:hover{color:var(--pink-ink)}
+.toc .n{font-family:var(--hand);font-size:22px;font-weight:700;color:var(--pink);margin-right:8px}
+
+/* ---------- 章節 ---------- */
+.section{margin-top:56px;scroll-margin-top:24px}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.sec-head .num{font-family:var(--serif);font-size:64px;font-weight:900;color:var(--pink);line-height:1}
+.sec-head h2{font-family:var(--serif);font-size:32px;font-weight:900;color:var(--black);line-height:1.3;margin-top:6px}
+.sec-head .en{font-family:var(--hand);font-size:26px;font-weight:700;color:var(--g500)}
+.sec-head .art{width:150px;flex:none;margin-bottom:6px}
+.rule{width:110px;height:7px;border-radius:6px 2px 6px 3px;background:var(--pink);opacity:.85;transform:rotate(-1deg);margin:12px 0 22px}
+h3{font-size:20px;font-weight:700;margin:32px 0 8px;color:var(--black)}
+h3::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pink);margin-right:10px;vertical-align:3px}
+
+/* ---------- 文字 ---------- */
+p{margin:8px 0}
+ul,ol{padding-left:1.3em;margin:6px 0}
+li{margin:4px 0}
+li::marker{color:var(--pink)}
+b,strong{color:var(--black)}
+.lead{font-size:19px}
+.muted{color:var(--g500)}
+.small{font-size:15px}
+.hl{background:linear-gradient(transparent 50%,rgba(255,46,126,.24) 50%,rgba(255,46,126,.24) 92%,transparent 92%);padding:0 2px}
+.hand{font-family:var(--hand);font-size:24px;color:var(--pink-ink)}
+.src{font-size:13px;color:var(--g500);margin-top:6px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.88em;background:var(--g100);padding:1px 5px;border-radius:4px}
+.formula{text-align:center;font-size:20px;margin:14px 0;overflow-x:auto}
+.big-number{font-family:var(--serif);font-size:44px;font-weight:900;color:var(--pink);line-height:1.2}
+
+/* ---------- 卡片 ---------- */
+.card{position:relative;background:var(--white);border:1px solid rgba(0,0,0,.06);border-radius:3px;padding:18px 22px;margin:16px 0;box-shadow:0 8px 18px rgba(40,36,30,.08)}
+.card h4{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--black)}
+.card.key{background:var(--pink-soft);border-color:rgba(255,46,126,.15)}
+.card.key::before{content:"";position:absolute;top:-10px;left:50%;width:84px;height:20px;transform:translateX(-50%) rotate(-2deg);background:var(--tape)}
+.card.dark{background:var(--ink);color:var(--white)}
+.card.dark b,.card.dark h4,.card.dark strong{color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid2 .card,.grid3 .card{margin:0}
+.badge{display:inline-block;font-size:12px;font-weight:700;background:var(--pink);color:#fff;border-radius:999px;padding:1px 9px;margin-left:6px;vertical-align:2px}
+.badge.gray{background:var(--g200);color:var(--g700)}
+
+/* ---------- 圖文並排 ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center;margin:16px 0}
+
+/* ---------- 表格 ---------- */
+table{border-collapse:collapse;width:100%;background:var(--white);font-size:15.5px;margin:12px 0;box-shadow:0 8px 18px rgba(40,36,30,.08)}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--g200);vertical-align:top}
+th{font-size:13px;letter-spacing:.08em;color:var(--g500);border-bottom:2px solid var(--black)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.focus td{background:var(--pink-soft)}
+
+/* ---------- 折疊答案 ---------- */
+details{border:1.5px dashed var(--g400);border-radius:6px;padding:10px 16px;background:var(--white);margin:12px 0}
+details summary{cursor:pointer;font-weight:700;color:var(--pink-ink);list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ "}
+details[open]{border-style:solid;border-color:var(--pink)}
+details[open] summary::before{content:"▾ "}
+details[open] summary{margin-bottom:6px}
+
+/* ---------- 步驟 ---------- */
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding-left:44px;margin:10px 0}
+.steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:-4px;font-family:var(--hand);font-weight:700;font-size:28px;color:var(--pink)}
+
+/* ---------- 引言 ---------- */
+.quote{font-family:var(--serif);font-size:26px;font-weight:700;line-height:1.5;color:var(--black);border-left:4px solid var(--pink);padding-left:20px;margin:16px 0}
+
+/* ---------- 圖 ---------- */
+.figure{background:var(--white);border-radius:3px;box-shadow:0 8px 18px rgba(40,36,30,.1);padding:14px;margin:16px 0}
+.figure svg{display:block;width:100%;height:auto}
+.caption{font-size:13.5px;color:var(--g500);text-align:center;margin-top:6px}
+svg text{font-family:var(--sans)}
+
+/* ---------- 插圖：原色，白邊＋紙膠帶 ---------- */
+.art{position:relative;display:inline-block;background:var(--white);padding:8px;border-radius:3px;line-height:0;
+  box-shadow:0 2px 0 rgba(0,0,0,.04),0 12px 24px rgba(0,0,0,.2);transform:rotate(2deg)}
+.art img{display:block;width:100%;height:auto;border-radius:2px}
+.art::before{content:"";position:absolute;top:-10px;left:50%;width:76px;height:20px;transform:translateX(-50%) rotate(-3deg);background:var(--tape);z-index:1}
+.art.tilt-l{transform:rotate(-2deg)}
+
+/* ---------- 回顧與頁尾 ---------- */
+.recap{background:var(--ink);color:#fff;padding:26px 30px;margin-top:56px;border-radius:3px}
+.recap h2{font-family:var(--serif);font-size:26px;margin-bottom:10px}
+.recap li{color:#e4e4e7}
+.recap b{color:#fff}
+footer{margin-top:40px;font-size:13px;color:var(--g500);border-top:1px dashed var(--g300);padding-top:14px}
+
+/* ---------- 手機 ---------- */
+@media (max-width:760px){
+  body{font-size:16px}
+  .page{margin:0;border-radius:0;padding:0 16px 48px}
+  .page::before{display:none}
+  .cover{margin:0 -16px 28px;padding:40px 48px 36px 16px;flex-direction:column;align-items:flex-start}
+  .cover::after{right:16px;width:12px}
+  .cover h1{font-size:36px}
+  .cover .art{width:200px}
+  .sec-head .art{display:none}
+  .sec-head .num{font-size:48px}
+  .sec-head h2{font-size:26px}
+  .grid2,.grid3,.split{grid-template-columns:1fr}
+  .toc ol{columns:1}
+}
+
+/* ---------- 列印 ---------- */
+@media print{
+  body{background:#fff}
+  .page{box-shadow:none;margin:0;max-width:none}
+  .page::before{display:none}
+  details{border-style:solid}
+  details:not([open]) > *:not(summary){display:block}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

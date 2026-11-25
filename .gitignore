@@ -1,0 +1,4 @@
+.DS_Store
+**/.obsidian/workspace*.json
+# 講義 PDF 是授課老師的著作，只留在本機，不上傳
+raw/*.pdf

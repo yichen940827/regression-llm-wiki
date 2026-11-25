@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>迴歸分析導論・圖文講義</title>
+<link rel="stylesheet" href="theme/handout.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" defer></script>
+<script src="../slides/theme/slides.js"></script>
+</head>
+<body>
+<div class="page">
+
+<!-- 封面 -->
+<header class="cover">
+  <div class="ctext">
+    <div class="kicker">Regression Analysis I · Lecture 01</div>
+    <h1>迴歸分析導論</h1>
+    <div class="sub">Introduction to Regression Analysis</div>
+    <div class="bar"></div>
+    <div class="meta">圖文講義 · 對應課本 ALSM Chapter 1<br>內容整理自 wiki：sources/lecture-01 及相關概念頁</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1741240041535-9a1d6d945c93.avif" alt="站在白板前講解圖表的人"></figure>
+</header>
+
+<nav class="toc">
+  <h2>本講內容</h2>
+  <ol>
+    <li><a href="#s1"><span class="n">01</span>「迴歸」從哪裡來？</a></li>
+    <li><a href="#s2"><span class="n">02</span>函數關係 vs. 統計關係</a></li>
+    <li><a href="#s3"><span class="n">03</span>迴歸函數與迴歸模型</a></li>
+    <li><a href="#s4"><span class="n">04</span>資料來源與因果</a></li>
+    <li><a href="#s5"><span class="n">05</span>模型的適用範圍與外插</a></li>
+    <li><a href="#s6"><span class="n">06</span>偏誤–變異取捨</a></li>
+    <li><a href="#s7"><span class="n">07</span>練習題</a></li>
+    <li><a href="#recap"><span class="n">✓</span>重點回顧</a></li>
+  </ol>
+</nav>
+
+<!-- ===================== 01 ===================== -->
+<section class="section" id="s1">
+  <div class="sec-head">
+    <div><div class="num">01</div><h2>「迴歸」從哪裡來？</h2><div class="en">Regression to the Mean</div></div>
+    <figure class="art"><img src="../../assets/vector-1739803877156-e5ccecef3654.avif" alt="長條圖與趨勢線"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <div class="card key"><h4>💡 一句話直覺</h4><p>極端的值，下一次往往沒那麼極端。</p></div>
+
+  <h3>Galton 的身高研究（1886）</h3>
+  <p>Francis Galton 研究<b>父母與成年子女的身高</b>，發現高（矮）的父母，子女也偏高（矮），但子女的身高傾向<span class="hl">「回歸」到平均值</span>。「regression」這個詞就是從這裡來的。之後 Karl Pearson、Udny Yule、R. A. Fisher 把它推廣成一般的統計分析方法。</p>
+  <p class="src">出處：Lecture 01 p.1</p>
+
+  <h3>例題：高個子父親的兒子</h3>
+  <p><code>father.son</code> 資料共有 1078 對父子。取出身高 ≥ 72 吋的父親（70 位），比較父子的平均身高：</p>
+  <div class="card"><h4>🤔 先猜猜看</h4><p>身高很高的爸爸，兒子平均會比爸爸<b>更高</b>還是<b>更矮</b>？</p></div>
+  <table>
+    <tr><th>單位：吋</th><th class="num">父親</th><th class="num">兒子</th></tr>
+    <tr><td>全體平均</td><td class="num">67.69</td><td class="num">68.68</td></tr>
+    <tr class="focus"><td>父親 ≥ 72 吋（70 位）</td><td class="num">72.85</td><td class="num">71.44</td></tr>
+  </table>
+  <details>
+    <summary>揭曉：平均差（兒子 − 父親）</summary>
+    <div class="big-number">−1.42 吋</div>
+    <p><b>整體</b>來看，兒子比父親略高（+0.99 吋）；但<b>高個子父親</b>這一組，兒子反而平均矮了 1.42 吋。兒子仍然偏高，只是<span class="hl">沒有父親那麼極端</span>，這就是趨向平均數。</p>
+  </details>
+  <p class="src">出處：Lecture 01 p.2</p>
+</section>
+
+<!-- ===================== 02 ===================== -->
+<section class="section" id="s2">
+  <div class="sec-head">
+    <div><div class="num">02</div><h2>函數關係 vs. 統計關係</h2><div class="en">Functional vs. Statistical Relation</div></div>
+    <figure class="art tilt-l"><img src="../../assets/premium_vector-1722610416579-2cdfea7fca29.avif" alt="尺、筆筒與計算機"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <p class="lead">關鍵問題只有一個：<b>知道 $X$，能不能精確算出 $Y$？</b></p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>📌 函數關係 Functional</h4>
+      <div class="formula">$Y = f(X)$</div>
+      <p class="small">點全部落在線上。例：單價 \$2 的產品，銷售額 $Y = 2X$；攝氏換華氏 $°F = \tfrac95°C + 32$。</p>
+      <div class="figure" style="box-shadow:none;padding:0"><svg id="fig-func" viewBox="0 0 440 190"></svg></div>
+    </div>
+    <div class="card key">
+      <h4>📌 統計關係 Statistical</h4>
+      <div class="formula">$Y = \underbrace{f(X)}_{\text{趨勢}} + \underbrace{\varepsilon}_{\text{散布}}$</div>
+      <p class="small">點散在趨勢的兩側。實際觀測到的資料，幾乎都是統計關係。</p>
+      <div class="figure" style="box-shadow:none;padding:0"><svg id="fig-stat" viewBox="0 0 440 190"></svg></div>
+    </div>
+  </div>
+  <p class="src">出處：Lecture 01 p.3–4</p>
+
+  <h3>趨勢不一定是直線：類固醇與年齡</h3>
+  <div class="split">
+    <div>
+      <p>27 位 8–25 歲健康女性的<b>年齡</b> ($X$) 與<b>血漿類固醇濃度</b> ($Y$)：濃度隨年齡上升，到某個程度後<span class="hl">趨於平緩</span>。</p>
+      <p>所以 $Y = f(X) + \varepsilon$ 裡的 $f$ 可以是線性，<b>但不一定</b>。</p>
+      <p class="small muted">其他統計關係的例子：期中與年終績效評估、入學成績與 GPA、飲酒量與血液酒精濃度、車速與油耗、肺活量與吸菸包年數。</p>
+    </div>
+    <div class="figure"><svg id="fig-steroid" viewBox="0 0 500 360"></svg><div class="caption">示意圖（非原始資料）</div></div>
+  </div>
+  <p class="src">出處：Lecture 01 p.4–5；ALSM Figure 1.3</p>
+</section>
+
+<!-- ===================== 03 ===================== -->
+<section class="section" id="s3">
+  <div class="sec-head">
+    <div><div class="num">03</div><h2>迴歸函數與迴歸模型</h2><div class="en">Regression Function &amp; Model</div></div>
+    <figure class="art"><img src="../../assets/premium_vector-1682299257648-a19f5879e226.avif" alt="桌上的筆電與分析圖表"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <h3>迴歸函數：給定 $X$ 時，$Y$ 的平均</h3>
+  <div class="formula" style="font-size:24px">$E(Y \mid \mathbf{X}) = f(\mathbf{X})$</div>
+  <div class="split">
+    <div>
+      <p>每一筆觀測都可以拆成兩部分：</p>
+      <div class="formula" style="font-size:18px">$\underbrace{Y_i}_{\text{這筆觀測}} = \underbrace{E(Y\mid X_i)}_{\text{這個 } X \text{ 下的趨勢}} + \underbrace{\varepsilon_i}_{\text{偏離趨勢}}$</div>
+      <div class="card key"><h4>📌 簡單線性迴歸</h4><div class="formula" style="font-size:17px;margin:4px 0">$E(Y) = \beta_0 + \beta_1 x,\quad Y_i = (\beta_0 + \beta_1 x) + \varepsilon_i$</div></div>
+    </div>
+    <div class="figure"><svg id="fig-regfn" viewBox="0 0 480 360"></svg><div class="caption">每個 $X$ 上，$Y$ 都有一個分配；迴歸線穿過各分配的平均（示意圖）</div></div>
+  </div>
+  <p class="src">出處：Lecture 01 p.6</p>
+
+  <h3>變數的角色與資料結構</h3>
+  <div class="split">
+    <div>
+      <ul>
+        <li><b>反應變數 $Y$</b>：又稱應變數、結果變數；本課程只有一個。</li>
+        <li><b>解釋變數 $X_1,\dots,X_k$</b>：又稱自變數、預測變數 (predictor)、regressor。</li>
+        <li>$n$ 是樣本數；$\mathbf{X}_i=(X_{i1},\dots,X_{ik})$ 是第 $i$ 個單位的所有 $X$。</li>
+      </ul>
+      <p class="small muted">ALSM 用 $p-1$ 表示解釋變數個數。</p>
+    </div>
+    <div class="card">
+      <p class="small muted" style="text-align:center">$n \times (k+1)$ 資料矩陣，每一列是一個觀測單位</p>
+      <div class="formula">$$\begin{bmatrix} Y_1 & X_{11} & \cdots & X_{1k} \\ Y_2 & X_{21} & \cdots & X_{2k} \\ \vdots & \vdots & & \vdots \\ Y_n & X_{n1} & \cdots & X_{nk} \end{bmatrix}$$</div>
+    </div>
+  </div>
+  <p class="src">出處：Lecture 01 p.3</p>
+
+  <h3>迴歸模型能做什麼？</h3>
+  <div class="grid3">
+    <div class="card key"><h4>① 描述資料</h4><p class="small">比表格甚至圖形更有資訊量、更方便的摘要</p></div>
+    <div class="card key"><h4>② 估計參數</h4><p class="small">估計未知的量，例如 $\beta_0, \beta_1$</p></div>
+    <div class="card key"><h4>③ 預測</h4><p class="small">預測未來的反應值</p></div>
+  </div>
+  <p>本課程考慮<b>線性模型</b>：它是最常用的統計模型，估計（最小平方法）與計算都比較簡單。只有一個解釋變數叫<b>簡單線性迴歸 (SLR)</b>，多個解釋變數叫<b>多元迴歸</b>。</p>
+  <div class="card dark"><h4>⚠️ 什麼時候不適用？</h4><p>$Y$ 不是連續型（例如<b>二元</b>）時，傳統迴歸模型不適用，應改用 <b>Logistic 迴歸</b>。</p></div>
+  <p class="src">出處：Lecture 01 p.7</p>
+
+  <h3>建模的態度：所有模型都是近似</h3>
+  <p class="quote">“All models are wrong, but some are useful.”<br><span class="muted small" style="font-family:var(--sans);font-weight:400">— George E. P. Box</span></p>
+  <div class="grid2">
+    <div class="card">
+      <h4>📌 模型的基本設定</h4>
+      <ul class="small">
+        <li>$Y$ 是<b>隨機變數</b>，考慮它在給定 $\mathbf{X}$ 下的條件分配</li>
+        <li>$\mathbf{X}$ 通常視為<b>固定</b>，即使實際上是隨機抽出的：我們只問「在這些已觀察到的 $X$ 值之下，$Y$ 怎麼變動」</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>📌 建模是反覆的過程</h4>
+      <ol class="steps small">
+        <li>建立一個或多個暫定模型（可參考既有理論）</li>
+        <li>檢查模型適切性 (model adequacy checking)</li>
+        <li>常常是為了方便而選：線性模型是有用的第一步近似</li>
+        <li>反覆修正</li>
+      </ol>
+    </div>
+  </div>
+  <p>資料必須能<b>代表</b>所研究的系統，否則結論很可能有誤；配適模型之前，應先做探索性資料分析 (EDA)。</p>
+  <p class="src">出處：Lecture 01 p.8–10</p>
+</section>
+
+<!-- ===================== 04 ===================== -->
+<section class="section" id="s4">
+  <div class="sec-head">
+    <div><div class="num">04</div><h2>資料來源與因果</h2><div class="en">Observational vs. Experimental Data</div></div>
+    <figure class="art tilt-l"><img src="../../assets/premium_vector-1722917987980-0da6ec0a0c59.avif" alt="三角形與數學符號插圖"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <h3>研究者有沒有控制 $X$？</h3>
+  <table>
+    <tr><th></th><th>觀察（非實驗）資料</th><th>實驗資料</th></tr>
+    <tr><td><b>研究者控制 $X$？</b></td><td>否，只是收集資料</td><td>是，$X$（處理 treatment）固定或受控制</td></tr>
+    <tr><td><b>隨機分派？</b></td><td>否</td><td>是，隨機分派給各單位</td></tr>
+    <tr><td><b>未測量變數</b></td><td>可能同時影響 $X$ 與 $Y$</td><td>透過隨機分派平衡掉</td></tr>
+    <tr class="focus"><td><b>因果證據</b></td><td>很弱</td><td>較強，但仍非決定性</td></tr>
+    <tr><td><b>常見分析</b></td><td>迴歸（最常見）</td><td>ANOVA、迴歸</td></tr>
+  </table>
+  <p class="small muted">ANOVA：比較多個母體或多種條件，跟迴歸很像，但對 $X$ 的值有限制。</p>
+  <p class="src">出處：Lecture 01 p.7–8</p>
+
+  <h3>相關 ≠ 因果</h3>
+  <div class="split">
+    <div>
+      <ul>
+        <li>迴歸模型<b>不代表</b>因果關係。</li>
+        <li>強相關可以用 $X$ <b>預測</b> $Y$，但不表示改變 $X$ 就會讓 $Y$ 改變。</li>
+        <li>迴歸可以<b>幫助</b>確認因果，但不能是唯一依據。</li>
+      </ul>
+      <div class="card key"><h4>🤔 想一想</h4><p class="small">為什麼收入高的人比較容易肥胖？（提示：看右圖）</p></div>
+    </div>
+    <div class="figure"><svg id="fig-confound" viewBox="0 0 480 320"></svg><div class="caption">收入與肥胖都跟年齡有關</div></div>
+  </div>
+  <p class="src">出處：Lecture 01 p.7–8</p>
+</section>
+
+<!-- ===================== 05 ===================== -->
+<section class="section" id="s5">
+  <div class="sec-head">
+    <div><div class="num">05</div><h2>模型的適用範圍與外插</h2><div class="en">Scope of the Model &amp; Extrapolation</div></div>
+    <figure class="art"><img src="../../assets/vector-1751914322607-d383f5810f65.avif" alt="尺、便利貼與鉛筆"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <div class="split">
+    <div>
+      <p class="lead">迴歸方程式只在<b>觀測資料涵蓋的 $X$ 範圍內</b>有效，這個範圍叫做<b>模型的適用範圍</b>。</p>
+      <p>用範圍外的 $X$ 做預測就是<b>外插</b>。在範圍內近似直線的關係，到了範圍外可能完全不同，所以很危險。</p>
+    </div>
+    <div class="figure"><svg id="fig-extra" viewBox="0 0 500 340"></svg><div class="caption">資料只在 $x_1$ 到 $x_2$ 之間；直線延伸到 $x_3$ 與真實曲線差距很大（示意圖）</div></div>
+  </div>
+  <div class="card dark"><h4>⚠️ 常見誤解</h4><p>「配適得很好的迴歸式，可以預測任何 $X$ 值。」✗ 配適好只代表<b>範圍內</b>好。</p></div>
+  <p class="src">出處：Lecture 01 p.9</p>
+</section>
+
+<!-- ===================== 06 ===================== -->
+<section class="section" id="s6">
+  <div class="sec-head">
+    <div><div class="num">06</div><h2>偏誤–變異取捨</h2><div class="en">Bias–Variance Tradeoff</div></div>
+    <figure class="art tilt-l"><img src="../../assets/vector-1761644535160-cbcf13123f2a.avif" alt="雲端資料插圖"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <h3>瞄不準 vs. 手不穩</h3>
+  <div class="grid2">
+    <div class="card"><h4>📌 偏誤 (bias，準確度)</h4><p class="small">預測與正確值之間的差 → 看落點的<b>中心</b>離靶心多遠</p></div>
+    <div class="card"><h4>📌 變異 (variance，精確度)</h4><p class="small">預測的變動程度 → 看落點<b>彼此</b>有多分散</p></div>
+  </div>
+  <div class="figure"><svg id="fig-darts" viewBox="0 0 1100 250"></svg></div>
+  <details>
+    <summary>✏️ 課堂練習：判斷 (a)–(d) 的偏誤與變異（點開看答案）</summary>
+    <table>
+      <tr><th>靶</th><th>偏誤</th><th>變異</th><th>理由</th></tr>
+      <tr><td>(a)</td><td>高</td><td>高</td><td>中心偏離靶心，落點也分散</td></tr>
+      <tr><td>(b)</td><td>低</td><td>高</td><td>中心大致在靶心，但落點分散</td></tr>
+      <tr><td>(c)</td><td>高</td><td>低</td><td>落點集中，但集中處不在靶心</td></tr>
+      <tr><td>(d)</td><td>低</td><td>低</td><td>落點集中在靶心，最理想</td></tr>
+    </table>
+  </details>
+  <p class="src">出處：Lecture 01 p.9（講義原題）</p>
+
+  <h3>太簡單 vs. 太複雜</h3>
+  <div class="split">
+    <div>
+      <ul>
+        <li><b>太簡單</b>（參數少）：偏誤大、變異小 → <b>配適不足</b> underfitting</li>
+        <li><b>太複雜</b>（參數多）：變異大、偏誤小 → <b>過度配適</b> overfitting</li>
+        <li>總誤差隨模型複雜度<span class="hl">先降後升</span>，最好的模型在兩者之間。</li>
+      </ul>
+      <div class="card key">
+        <h4>💡 完整分解 <span class="badge">補充</span></h4>
+        <div class="formula" style="font-size:17px">$E\big[(Y-\hat f(x))^2\big] = \text{Bias}^2 + \text{Var} + \sigma^2$</div>
+        <p class="small muted">$\sigma^2$ 是不可約誤差：再好的模型也消除不了。（補充，非講義內容）</p>
+      </div>
+    </div>
+    <div class="figure"><svg id="fig-ucurve" viewBox="0 0 500 360"></svg><div class="caption">總誤差隨模型複雜度先降後升（示意圖）</div></div>
+  </div>
+  <p class="src">出處：Lecture 01 p.9–10</p>
+</section>
+
+<!-- ===================== 07 ===================== -->
+<section class="section" id="s7">
+  <div class="sec-head">
+    <div><div class="num">07</div><h2>練習題</h2><div class="en">Exercises</div></div>
+    <figure class="art"><img src="../../assets/premium_vector-1720635001192-36480224954f.avif" alt="文具插圖"></figure>
+  </div>
+  <div class="rule"></div>
+
+  <h3>練習 1　函數關係還是統計關係？<span class="badge">補充題</span><span class="badge gray">難度 1</span></h3>
+  <ol>
+    <li>計程車行駛公里數 → 車資（固定起跳價＋每公里費率，不考慮塞車）</li>
+    <li>每週讀書時數 → 期末考成績</li>
+    <li>正方形邊長 → 面積</li>
+    <li>廣告支出 → 當月營收</li>
+    <li>父親身高 → 成年兒子身高</li>
+  </ol>
+  <p class="small muted">💡 提示：知道 $X$ 之後，能不能<b>精確算出</b> $Y$？</p>
+  <details>
+    <summary>看答案</summary>
+    <table>
+      <tr><th>題</th><th>關係</th><th>理由</th></tr>
+      <tr><td>1</td><td>函數</td><td>車資＝起跳價＋費率×公里數，可精確算出</td></tr>
+      <tr><td>2</td><td>統計</td><td>同樣讀書時數，分數仍會不同</td></tr>
+      <tr><td>3</td><td>函數</td><td>$Y=X^2$；函數關係不一定是直線</td></tr>
+      <tr><td>4</td><td>統計</td><td>營收還受季節、競爭者等因素影響</td></tr>
+      <tr><td>5</td><td>統計</td><td>個別差異很大（見父子身高資料）</td></tr>
+    </table>
+    <p>判斷關鍵：只要同一個 $X$ 下 $Y$ 可能有不同的值，就是統計關係。</p>
+  </details>
+
+  <h3>練習 2　觀察資料還是實驗資料？<span class="badge">補充題</span><span class="badge gray">難度 2</span></h3>
+  <div class="grid2">
+    <div class="card"><h4>研究 A</h4><p class="small">隨機抽 500 名大學生，調查每天喝咖啡杯數 ($X$) 與 GPA ($Y$)：喝越多、GPA 越高，關係很強。</p></div>
+    <div class="card"><h4>研究 B</h4><p class="small">200 名受試者<b>抽籤</b>分成 4 組，每天服用 0／50／100／150 mg 補充劑 ($X$)，八週後測注意力分數 ($Y$)。</p></div>
+  </div>
+  <p>(a) 兩個研究各屬哪一類？(b) 研究 A 能說「多喝咖啡會提高 GPA」嗎？請提出一個替代解釋。(c) 研究 B 的因果證據是決定性的嗎？</p>
+  <details>
+    <summary>看答案</summary>
+    <p><b>(a)</b> A 是觀察資料；B 是實驗資料（劑量受控制且隨機分派）。注意：<span class="hl">隨機抽樣 ≠ 隨機分派</span>，隨機抽樣讓樣本有代表性，卻不能平衡掉未測量變數。</p>
+    <p><b>(b)</b> 不能。可能是「用功程度」同時讓人喝更多咖啡、GPA 也更高。</p>
+    <p><b>(c)</b> 因果證據較強，因為隨機分派平衡了未測量變數；但仍非決定性，還要考慮代表性與能否重複。</p>
+  </details>
+
+  <h3>練習 3　這個預測算不算外插？<span class="badge">補充題</span><span class="badge gray">難度 2</span></h3>
+  <p>類固醇資料是 27 位 <b>8–25 歲健康女性</b>。下列用法哪些是外插？</p>
+  <ol>
+    <li>預測 15 歲健康女性的類固醇濃度</li>
+    <li>預測 40 歲健康女性的類固醇濃度</li>
+    <li>預測 5 歲健康女孩的類固醇濃度</li>
+    <li>預測 20 歲健康<b>男性</b>的類固醇濃度</li>
+  </ol>
+  <p>延伸：若只用 8–14 歲的資料配適一條<b>直線</b>，再拿它預測 25 歲，會發生什麼問題？</p>
+  <details>
+    <summary>看答案</summary>
+    <p>1 可以接受（在範圍內）；2、3 是外插（超出 8–25 歲）。</p>
+    <p>4 不是「$X$ 範圍外」，但資料只有女性，男性屬於不同母體，違反「資料要能代表所研究的系統」。</p>
+    <p>延伸：8–14 歲正處於上升段，直線延伸到 25 歲會<b>高估</b>，因為真實關係之後趨於平緩。</p>
+  </details>
+</section>
+
+<!-- ===================== 回顧 ===================== -->
+<section class="recap" id="recap">
+  <h2>重點回顧</h2>
+  <ul>
+    <li><b>趨向平均數</b>：「迴歸」一詞的由來</li>
+    <li><b>統計關係</b>：$Y = f(X) + \varepsilon$，趨勢＋散布</li>
+    <li><b>迴歸函數</b>：$E(Y\mid\mathbf{X}) = f(\mathbf{X})$，給定 $X$ 時 $Y$ 的平均</li>
+    <li><b>三種用途</b>：描述、估計、預測</li>
+    <li><b>相關 ≠ 因果</b>：觀察資料的因果證據很弱</li>
+    <li><b>不可外插</b>：只在看過的 $X$ 範圍內可信</li>
+    <li><b>偏誤–變異取捨</b>：太簡單偏誤大、太複雜變異大</li>
+    <li>所有模型都是<b>近似</b>，建模是反覆的過程</li>
+  </ul>
+</section>
+
+<footer>迴歸分析 I · Lecture 01 圖文講義 · 內容整理自本知識庫 wiki（sources/lecture-01 及相關概念、例題、練習頁）· 標「補充」者非講義內容</footer>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+const {C, el, rng, gauss, axes} = SK;
+
+(function(){
+  const r = rng(7);
+  [['fig-func',0],['fig-stat',1]].forEach(([id,noisy]) => {
+    const s = document.getElementById(id); axes(s,40,170,420,15,'X','Y');
+    el(s,'line',{x1:50,y1:160,x2:410,y2:30,stroke:noisy?C.pink:C.g500,'stroke-width':3});
+    for (let i=0;i<16;i++){ const x=60+i*22; const y=160-(x-50)*130/360+(noisy?gauss(r)*15:0);
+      el(s,'circle',{cx:x,cy:y,r:5,fill:C.ink,opacity:.85}); }
+  });
+})();
+
+(function(){
+  const s = document.getElementById('fig-steroid'), r = rng(11); axes(s,50,320,480,20,'年齡','類固醇');
+  const X = a => 50+(a-6)*420/22, Y = v => 320-v*11;
+  const f = a => 24*(1-Math.exp(-(a-7.5)/4.5));
+  let d=''; for (let a=8;a<=25.2;a+=.2) d+=(d?'L':'M')+X(a)+','+Y(f(a));
+  el(s,'path',{d,fill:'none',stroke:C.pink,'stroke-width':3.5});
+  for (let i=0;i<27;i++){ const a=8+r()*17; el(s,'circle',{cx:X(a),cy:Y(f(a)+gauss(r)*2.2),r:5,fill:C.ink,opacity:.8}); }
+  [10,15,20,25].forEach(a => el(s,'text',{x:X(a),y:340,'text-anchor':'middle','font-size':13,fill:C.g500},a));
+})();
+
+(function(){
+  const s = document.getElementById('fig-regfn'), r = rng(3); axes(s,50,330,460,20,'X','Y');
+  const line = x => 290-(x-60)*0.55;
+  el(s,'line',{x1:60,y1:line(60),x2:450,y2:line(450),stroke:C.pink,'stroke-width':3.5});
+  [130,260,390].forEach((x0,k) => {
+    const mu = line(x0); let d='';
+    for (let t=-70;t<=70;t+=2){ const w=55*Math.exp(-(t*t)/(2*24*24)); d+=(d?'L':'M')+(x0+w)+','+(mu+t); }
+    el(s,'path',{d,fill:C.g200,'fill-opacity':.7,stroke:C.g500,'stroke-width':1.5});
+    el(s,'line',{x1:x0,y1:mu-75,x2:x0,y2:mu+75,stroke:C.g300,'stroke-dasharray':'4 4'});
+    for (let i=0;i<6;i++) el(s,'circle',{cx:x0-4+r()*8,cy:mu+gauss(r)*22,r:4.5,fill:C.ink,opacity:.8});
+    el(s,'circle',{cx:x0,cy:mu,r:6,fill:C.pink,stroke:'#fff','stroke-width':2});
+    el(s,'text',{x:x0,y:350,'text-anchor':'middle','font-size':13,fill:C.g500},'X = '+(k+1));
+  });
+  el(s,'text',{x:300,y:line(450)-14,'font-size':16,fill:C.pinkInk,'font-weight':700},'E(Y | X)');
+})();
+
+(function(){
+  const s = document.getElementById('fig-confound');
+  el(s,'defs',{}).innerHTML = `<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0L10,5L0,10z" fill="${C.ink}"/></marker>`;
+  const box = (x,y,t,dark) => { el(s,'rect',{x:x-80,y:y-30,width:160,height:60,rx:10,fill:dark?C.ink:C.g100,stroke:dark?C.ink:C.g300,'stroke-width':1.5});
+    el(s,'text',{x,y:y+7,'text-anchor':'middle','font-size':21,'font-weight':700,fill:dark?'#fff':C.ink},t); };
+  box(240,60,'年齡',true); box(90,250,'收入 X'); box(390,250,'肥胖 Y');
+  el(s,'line',{x1:205,y1:92,x2:120,y2:215,stroke:C.ink,'stroke-width':2.5,'marker-end':'url(#arr)'});
+  el(s,'line',{x1:275,y1:92,x2:360,y2:215,stroke:C.ink,'stroke-width':2.5,'marker-end':'url(#arr)'});
+  el(s,'line',{x1:175,y1:250,x2:305,y2:250,stroke:C.pink,'stroke-width':3,'stroke-dasharray':'8 6'});
+  el(s,'text',{x:240,y:238,'text-anchor':'middle','font-size':15,fill:C.pinkInk,'font-weight':700},'看起來有關？');
+})();
+
+(function(){
+  const s = document.getElementById('fig-extra'), r = rng(5); axes(s,40,300,480,20,'x','y');
+  const X = t => 60+t*400, Y = v => 290-v*240;
+  const bump = (t,m,w) => Math.exp(-Math.pow((t-m)/w,2));
+  const f = t => .1+.75*bump(t,.55,.22)+.3*bump(t,1.05,.12);
+  el(s,'rect',{x:X(0),y:20,width:X(.5)-X(0),height:280,fill:C.g100});
+  let d=''; for (let t=0;t<=1.001;t+=.01) d+=(d?'L':'M')+X(t)+','+Y(f(t));
+  el(s,'path',{d,fill:'none',stroke:C.ink,'stroke-width':2.5});
+  for (let i=0;i<14;i++){ const t=r()*.5; el(s,'circle',{cx:X(t),cy:Y(f(t)+gauss(r)*.03),r:4.5,fill:C.ink,opacity:.8}); }
+  const a=f(0), b=f(.5), end=Math.min(a+(b-a)/.5,1.1);
+  el(s,'line',{x1:X(0),y1:Y(a),x2:X(.5),y2:Y(b),stroke:C.pink,'stroke-width':3});
+  el(s,'line',{x1:X(.5),y1:Y(b),x2:X(1),y2:Y(end),stroke:C.pink,'stroke-width':3,'stroke-dasharray':'8 6'});
+  el(s,'line',{x1:X(1),y1:Y(end),x2:X(1),y2:Y(f(1)),stroke:C.g500,'stroke-width':2.5});
+  el(s,'text',{x:X(1)-10,y:(Y(end)+Y(f(1)))/2,'text-anchor':'end','font-size':14,fill:C.pinkInk,'font-weight':700},'預測誤差');
+  [['x₁',0],['x₂',.5],['x₃',1]].forEach(([l,t]) => el(s,'text',{x:X(t),y:320,'text-anchor':'middle','font-size':15,fill:C.g500},l));
+  el(s,'text',{x:X(.25),y:40,'text-anchor':'middle','font-size':13,fill:C.g500},'有資料的範圍');
+})();
+
+(function(){
+  const s = document.getElementById('fig-darts'), r = rng(21);
+  const cfg = [['(a)',[-38,-34],22],['(b)',[0,0],24],['(c)',[30,-48],6],['(d)',[0,0],6]];
+  cfg.forEach(([lab,[ox,oy],sd],i) => {
+    const cx=140+i*275, cy=110;
+    [95,65,35].forEach((rad,k) => el(s,'circle',{cx,cy,r:rad,fill:k===1?C.g200:C.g100,stroke:C.g400,'stroke-width':1.2}));
+    el(s,'circle',{cx,cy,r:11,fill:C.ink});
+    for (let j=0;j<6;j++){ const x=cx+ox+gauss(r)*sd, y=cy+oy+gauss(r)*sd;
+      el(s,'path',{d:`M${x-6},${y-6}L${x+6},${y+6}M${x+6},${y-6}L${x-6},${y+6}`,stroke:C.pink,'stroke-width':3,'stroke-linecap':'round'}); }
+    el(s,'text',{x:cx,y:238,'text-anchor':'middle','font-size':18,'font-weight':700,fill:C.ink},lab);
+  });
+})();
+
+(function(){
+  const s = document.getElementById('fig-ucurve'); axes(s,50,320,480,20,'模型複雜度','誤差');
+  const X = t => 60+t*400, Y = v => 310-v*260;
+  const b = t => .75*Math.exp(-3.2*t), v = t => .05+.6*Math.pow(t,2.6), n = .1;
+  const path = (fn,col,w,dash) => { let d=''; for (let t=0;t<=1.001;t+=.01) d+=(d?'L':'M')+X(t)+','+Y(fn(t)); el(s,'path',{d,fill:'none',stroke:col,'stroke-width':w,'stroke-dasharray':dash||''}); };
+  path(() => n, C.g400, 1.5, '5 5'); path(b, C.g500, 2.5, '7 5'); path(v, C.g500, 2.5); path(t => b(t)+v(t)+n, C.pink, 4);
+  let best=0, bv=9; for (let t=0;t<=1;t+=.01){ const e=b(t)+v(t)+n; if (e<bv){ bv=e; best=t; } }
+  el(s,'line',{x1:X(best),y1:Y(bv),x2:X(best),y2:320,stroke:C.ink,'stroke-width':1.5,'stroke-dasharray':'4 4'});
+  el(s,'circle',{cx:X(best),cy:Y(bv),r:6,fill:C.ink});
+  el(s,'text',{x:X(.97),y:Y(b(1)+v(1)+n)+4,'text-anchor':'end','font-size':15,'font-weight':700,fill:C.pinkInk},'總誤差');
+  el(s,'text',{x:X(.08),y:Y(b(.08))-8,'font-size':14,'font-weight':700,fill:C.g700},'Bias²');
+  el(s,'text',{x:X(.97),y:Y(v(.85))+4,'text-anchor':'end','font-size':14,'font-weight':700,fill:C.g700},'Variance');
+  el(s,'text',{x:X(.99),y:Y(n)-6,'text-anchor':'end','font-size':12,fill:C.g500},'σ²（不可約誤差）');
+  el(s,'text',{x:X(.03),y:338,'font-size':12,fill:C.g500},'太簡單');
+  el(s,'text',{x:X(1),y:338,'text-anchor':'end','font-size':12,fill:C.g500},'太複雜');
+})();
+});
+</script>
+</body>
+</html>
