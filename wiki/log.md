@@ -84,3 +84,10 @@
 - 節點 3：outputs/slides/simple-linear-regression.html，呈現檢查第 1 次 2 項未過，自動修正 1 次後通過
 - 檢查紀錄：checks.md；等待使用者檢閱
 - 使用者檢閱通過，簡報定案
+
+## [2026-11-25] slides | 簡單線性迴歸的模型診斷（Lecture 04）
+- 節點 0–1：outputs/slides/plans/slr-diagnostics/outline.md（素材 21 頁、大綱 28 頁），自動檢查修正 1 次後通過，使用者確認
+- 節點 2：spec.md（28 頁），自動檢查第 1 次全部通過，使用者確認
+- 節點 3：outputs/slides/slr-diagnostics.html，呈現檢查第 1 次 1 項未過，自動修正 1 次後通過
+- 檢查紀錄：checks.md；等待使用者檢閱
+- 使用者檢閱通過，簡報定案

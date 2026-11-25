@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>簡單線性迴歸的模型診斷</title>
+<!-- 由 outputs/slides/plans/slr-diagnostics/spec.md（2026-11-25 確認）產生 -->
+<link rel="stylesheet" href="theme/slides.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" defer></script>
+<script src="theme/slides.js"></script>
+<style>
+/* 本份簡報的小調整（只調間距與字級，樣式仍來自 theme） */
+.steps.math li{padding-left:44px;margin:6px 0;font-size:19px;line-height:1.5}
+.steps.math li::before{font-size:26px;top:2px}
+.formula.sm{font-size:21px}
+.formula.xs{font-size:18px}
+table.compact th,table.compact td{padding:7px 12px}
+table.compact{font-size:18px}
+table.tight th,table.tight td{padding:5px 10px}
+table.tight{font-size:16px}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- S01 封面 -->
+<section class="slide title-slide" data-spec="S01">
+  <div class="tleft">
+    <div class="kicker">Regression Analysis I · Lecture 04</div>
+    <h1>簡單線性迴歸的模型診斷</h1>
+    <div class="sub">Diagnostics for Simple Linear Regression</div>
+    <div class="bar"></div>
+    <div class="meta">殘差圖 · 常態 · 變異數 · 缺適檢定<br>對應課本：ALSM Sections 3.1–3.7</div>
+  </div>
+  <div class="tright"><figure class="art"><img src="../../assets/premium_vector-1682299257648-a19f5879e226.avif" alt="桌上的筆電與分析圖表"></figure></div>
+  <div class="notes">算得出估計與檢定，不代表模型適合資料。這一講逐一檢查 SLR 的假設。</div>
+</section>
+
+<!-- S02 路線 -->
+<section class="slide" data-spec="S02">
+  <div class="kicker">Roadmap</div>
+  <h2>今天的路線</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <ol class="steps">
+        <li>為什麼要診斷？</li>
+        <li>用殘差圖看出問題</li>
+        <li>檢查常態</li>
+      </ol>
+    </div>
+    <div class="col">
+      <ol class="steps" style="counter-reset:s 3">
+        <li>檢定變異數是否相同</li>
+        <li>缺適檢定</li>
+      </ol>
+      <div class="card"><h3>📌 先備提醒</h3><p class="small">SLR 的誤差假設：平均 0、變異數相同、獨立、常態（L02）</p></div>
+    </div>
+  </div>
+  <div class="notes">先請學生說出 L02 的誤差假設，今天就是逐條檢查它們。</div>
+</section>
+
+<!-- S03 章節 01 -->
+<section class="slide section-slide" data-spec="S03">
+  <div class="stext">
+    <div class="num">01</div>
+    <h2>為什麼要診斷？</h2>
+    <div class="en-title">Why Model Diagnostics?</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1741240041535-9a1d6d945c93.avif" alt="站在白板前講解圖表的人"></figure>
+</section>
+
+<!-- S04 六種情況 -->
+<section class="slide" data-spec="S04">
+  <div class="kicker">Model Diagnostics</div>
+  <h2>模型可能出錯的 6 種情況</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:.8">
+      <ul>
+        <li>所有假設都符合資料，模型才<b>適當</b></li>
+        <li>假設被違反：結論可能不同、<span class="hl">推論可能無效</span></li>
+      </ul>
+      <div class="card key"><h3>💡 直覺</h3><p class="small">像健康檢查：先看整體，再針對可疑處做專門檢查</p></div>
+    </div>
+    <div class="col">
+      <table class="compact">
+        <tr><th>問題</th><th>本簡報</th></tr>
+        <tr><td>1　迴歸函數不是線性</td><td>第 2、5 章</td></tr>
+        <tr><td>2　誤差不獨立</td><td>第 2 章</td></tr>
+        <tr><td>3　誤差不是常態</td><td>第 3 章</td></tr>
+        <tr><td>4　誤差變異數不相同</td><td>第 2、4 章</td></tr>
+        <tr><td>5　有一兩個離群值</td><td>第 2 章</td></tr>
+        <tr><td>6　漏掉重要的解釋變數</td><td>第 2 章</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.1–2</div>
+  <div class="notes">用「健康檢查」比喻：先看整體，再針對可疑處做專門檢查。這張表也是今天的地圖。</div>
+</section>
+
+<!-- S05 殘差與標準化殘差 -->
+<section class="slide" data-spec="S05">
+  <div class="kicker">Residuals</div>
+  <h2>殘差與標準化殘差</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <div class="formula sm">$e_i=Y_i-\hat Y_i,\qquad r_i=\dfrac{e_i}{\sqrt{MSE(1-h_{ii})}},\qquad e_i^*=\dfrac{e_i}{\sqrt{MSE}}$</div>
+    <div style="display:flex;gap:40px;flex:1;min-height:0">
+      <div class="col" style="flex:1.4">
+        <ul class="small">
+          <li>模型適當時，殘差應反映誤差的假設；$\bar e=0$</li>
+          <li>$r_i$：<b>標準化殘差</b>，較推薦（R 的 rstandard）</li>
+          <li>$h_{ii}$ 是槓桿值，之後的講次介紹</li>
+          <li>$e_i^*$：半學生化殘差，忽略各殘差變異數不同</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="card key"><h3>💡 直覺</h3><p class="small">$r_i$ 的變異數約為 1，超過 ±3 就值得懷疑</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.2, 11</div>
+  <div class="notes">學生常問為什麼殘差變異數不是 σ²：先只說「每個點不一樣，和 h_ii 有關」，等講到槓桿值再完整解釋。</div>
+</section>
+
+<!-- S06 圖形為主 -->
+<section class="slide" data-spec="S06">
+  <div class="kicker">Plots · Tests</div>
+  <h2>圖形為主，檢定為輔</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:18px">
+    <div class="grid2">
+      <div class="card"><h3>📌 圖形：看得出問題的樣子</h3><p class="small">針對不同問題畫不同的殘差圖，最常用</p></div>
+      <div class="card"><h3>📌 檢定：給一個 p 值</h3><p class="small">依「模型成立時殘差應有的分配」設計</p></div>
+    </div>
+    <ul>
+      <li>檢定<span class="hl">很受樣本數影響</span>，不能取代圖形</li>
+    </ul>
+    <div class="card key"><h3>💡 重點</h3><p class="small">先看圖，再用檢定確認</p></div>
+  </div>
+  <div class="src">出處：Lecture 04 p.2, 15</div>
+  <div class="notes">第 3 章會再用一頁講「檢定不能取代圖形」的誤解。</div>
+</section>
+
+<!-- S07 章節 02 -->
+<section class="slide section-slide" data-spec="S07">
+  <div class="stext">
+    <div class="num">02</div>
+    <h2>用殘差圖看出問題</h2>
+    <div class="en-title">Reading Residual Plots</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1739803877156-e5ccecef3654.avif" alt="長條圖與趨勢線"></figure>
+</section>
+
+<!-- S08 七種殘差圖 -->
+<section class="slide" data-spec="S08">
+  <div class="kicker">Residual Plots</div>
+  <h2>七種殘差圖</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.3">
+      <table class="tight">
+        <tr><th>圖</th><th>主要檢查</th></tr>
+        <tr class="focus"><td>$e_i$ 對 $\hat Y_i$</td><td>線性、變異數、離群值</td></tr>
+        <tr><td>$e_i$ 對 $X_i$</td><td>同上（SLR 中資訊相同）</td></tr>
+        <tr><td>$e_i$ 對模型外的變數</td><td>遺漏變數</td></tr>
+        <tr><td>$e_i$ 對時間或順序</td><td>獨立性</td></tr>
+        <tr><td>$\lvert e_i\rvert$ 或 $e_i^2$ 對 $\hat Y_i$</td><td>變異數</td></tr>
+        <tr><td>直方圖、盒形圖</td><td>分配形狀</td></tr>
+        <tr><td>常態機率圖</td><td>常態</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <div class="card key"><h3>📌 重點</h3><p class="small">模型適當時，殘差圖像一條繞著 0 的<b>水平帶</b></p></div>
+      <p class="small">加上 lowess 平滑線，幫忙看出是直線還是曲線</p>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.3, 14</div>
+  <div class="notes">Lowess 是局部加權的移動平均，細節在 Lecture 05 再介紹。</div>
+</section>
+
+<!-- S09 好與壞 -->
+<section class="slide" data-spec="S09">
+  <div class="kicker">Residual Patterns</div>
+  <h2>好的與壞的殘差圖</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <div class="figure"><svg id="fig-patterns" width="1060" height="240"></svg>
+      <div class="caption">三張殘差對配適值的圖（示意圖，仿課本 Fig 3.4）</div></div>
+    <p class="small">🤔 先猜猜看：三張圖各代表什麼？</p>
+    <details>
+      <summary>看答案</summary>
+      (a) 水平帶、隨機跳動 → 沒看到問題　(b) U 形曲線 → 迴歸函數不是線性　(c) 喇叭形 → 變異數不相同
+    </details>
+  </div>
+  <div class="src">出處：Lecture 04 p.4　·　圖為示意圖</div>
+  <div class="notes">先遮住答案讓學生判斷。殘差的正負號不重要，所以喇叭形也可以畫 |e_i| 或 e_i²。</div>
+</section>
+
+<!-- S10 時間與遺漏變數 -->
+<section class="slide" data-spec="S10">
+  <div class="kicker">Independence · Omitted Variables</div>
+  <h2>時間順序與遺漏變數</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <div class="figure"><svg id="fig-time" width="480" height="210"></svg></div>
+      <ul class="small">
+        <li>焊接例：早期殘差多為負、後期多為正</li>
+        <li>只有知道資料收集順序時才能畫</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="figure"><svg id="fig-group" width="480" height="210"></svg></div>
+      <ul class="small">
+        <li>機器例：A 公司殘差多為正、B 公司多為負</li>
+        <li>把機器種類加入模型，預測可能好很多</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.11–13　·　圖為示意圖（仿課本 Fig 3.8a、3.10）</div>
+  <div class="notes">誤差不獨立有時可以看成漏掉了時間這個變數。正式檢定（runs、Durbin–Watson）在 ALSM Ch.12。</div>
+</section>
+
+<!-- S11 離群值 -->
+<section class="slide" data-spec="S11">
+  <div class="kicker">Outliers</div>
+  <h2>離群值</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.1">
+      <ul class="small">
+        <li>SLR 對離群值非常敏感，斜率容易被拉動</li>
+        <li>偵測：殘差圖、散布圖、$\lvert r_i\rvert>3$</li>
+        <li>來源：記錄錯誤，或真實且帶有重要資訊</li>
+        <li>正式的離群值檢定在 ALSM Ch.10</li>
+      </ul>
+      <div class="card dark"><h3>⚠️ 常見誤解</h3><p class="small">「標準化殘差超過 3 就直接刪掉。」<span class="muted">✗ 標出來調查原因</span></p></div>
+    </div>
+    <div class="col figure">
+      <svg id="fig-outlier" width="460" height="300"></svg>
+      <div class="caption">桃紅：含離群值的配適線；灰虛線：不含（示意圖）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.10–11　·　圖為示意圖</div>
+  <div class="notes">門檻是經驗法則：L04 用 3，L05 用 4。重點是把點標出來調查原因。</div>
+</section>
+
+<!-- S12 練習 1 -->
+<section class="slide" data-spec="S12">
+  <div class="kicker">Exercise 1 <span class="badge">補充題</span><span class="badge gray">難度 1</span></div>
+  <h2>練習 1：看殘差圖判斷問題</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <ol class="small" style="padding-left:1.4em">
+        <li>殘差對 $\hat Y$ 呈 U 形</li>
+        <li>$\hat Y$ 越大，殘差越分散</li>
+        <li>殘差對收集順序：前半負、後半正</li>
+        <li>水平帶，但有一點 $r_i=4.2$</li>
+        <li>殘差對工廠別：A 廠正、B 廠負</li>
+      </ol>
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">對照第 2 章的七種殘差圖</p></div>
+    </div>
+    <div class="col">
+      <details>
+        <summary>看答案</summary>
+        <table class="compact">
+          <tr><th>題</th><th>問題</th></tr>
+          <tr><td>1</td><td>非線性</td></tr>
+          <tr><td>2</td><td>變異數不相同</td></tr>
+          <tr><td>3</td><td>誤差不獨立（時間趨勢）</td></tr>
+          <tr><td>4</td><td>可能的離群值，要調查</td></tr>
+          <tr><td>5</td><td>漏掉變數（工廠別）</td></tr>
+        </table>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/residual-patterns-01（補充題）　·　出處：Lecture 04 p.4, 11–13</div>
+  <div class="notes">讓學生先寫下答案再揭曉，第 5 題最容易漏掉。</div>
+</section>
+
+<!-- S13 章節 03 -->
+<section class="slide section-slide" data-spec="S13">
+  <div class="stext">
+    <div class="num">03</div>
+    <h2>檢查常態</h2>
+    <div class="en-title">Checking Normality of Errors</div>
+  </div>
+  <figure class="art"><img src="../../assets/premium_vector-1722917987980-0da6ec0a0c59.avif" alt="三角形與數學符號插圖"></figure>
+</section>
+
+<!-- S14 常態機率圖怎麼來 -->
+<section class="slide" data-spec="S14">
+  <div class="kicker">Normal Probability Plot</div>
+  <h2>常態機率圖怎麼來？</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <div class="formula">$\sqrt{MSE}\ z(A),\qquad A=\dfrac{k-0.375}{n+0.25}$</div>
+    <div style="display:flex;gap:40px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>$k$ 是殘差排名，$z(A)$ 是標準常態第 $100A$ 百分位</li>
+          <li>排序殘差對期望值作圖</li>
+          <li>Toluca：$\sqrt{2384}=48.83$</li>
+        </ul>
+      </div>
+      <div class="col">
+        <table class="compact">
+          <tr><th>排名 $k$</th><th class="num">殘差</th><th class="num">期望值</th></tr>
+          <tr><td>1</td><td class="num">−83.88</td><td class="num">−95.91</td></tr>
+          <tr><td>25</td><td class="num">103.53</td><td class="num">95.91</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.6–8</div>
+  <div class="notes">讓學生手算一兩個點的 A 與 z(A)。R 的 qqnorm 在 n>10 時用 A=(k−0.5)/n。</div>
+</section>
+
+<!-- S15 怎麼看 -->
+<section class="slide" data-spec="S15">
+  <div class="kicker">Normal Probability Plot</div>
+  <h2>常態機率圖怎麼看？</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:12px">
+    <div class="figure"><svg id="fig-qq" width="1060" height="230"></svg>
+      <div class="caption">橫軸：常態下的期望值；縱軸：排序後的殘差（示意圖）</div></div>
+    <div class="grid2" style="gap:30px">
+      <ul class="small">
+        <li>接近直線 → 支持誤差為常態</li>
+        <li>常見偏離：偏斜、尾巴比常態輕或重</li>
+      </ul>
+      <ul class="small">
+        <li>注意兩軸是否對調，否則偏斜方向會看反</li>
+        <li>建議<span class="hl">最後才檢查常態</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.5–10　·　圖為示意圖</div>
+  <div class="notes">為什麼最後才查常態？非線性和變異數不相同都會讓常態機率圖變形。</div>
+</section>
+
+<!-- S16 常態性檢定 -->
+<section class="slide" data-spec="S16">
+  <div class="kicker">Tests for Normality</div>
+  <h2>常態性檢定</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:.85">
+      <ul class="small">
+        <li>$H_0$：誤差服從常態；p 值大 → 常態合理</li>
+        <li>常態相關檢定：排序殘差與期望值的相關</li>
+        <li>至少和表 B.6 的臨界值一樣大 → 大致常態</li>
+      </ul>
+      <div class="card key"><h3>📌 結論</h3><p class="small">Toluca 的誤差沒有明顯偏離常態</p></div>
+    </div>
+    <div class="col">
+      <table class="compact">
+        <tr><th>Toluca</th><th>統計量</th><th>結果</th></tr>
+        <tr class="focus"><td>常態相關</td><td>$r=0.991$</td><td>&gt; 0.959（$n=25$，α = 0.05）</td></tr>
+        <tr><td>Anderson–Darling</td><td>$A=0.207$</td><td>p = 0.851</td></tr>
+        <tr><td>Shapiro–Wilk</td><td>$W=0.979$</td><td>p = 0.863</td></tr>
+        <tr><td>Lilliefors</td><td>$D=0.096$</td><td>p = 0.803</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.15–17</div>
+  <div class="notes">先畫圖，再說「相關係數就是在量化這張圖有多直」。常態相關檢定是 Shapiro–Wilk 的簡化版。</div>
+</section>
+
+<!-- S17 檢定不能取代圖形 -->
+<section class="slide" data-spec="S17">
+  <div class="kicker">Misconception</div>
+  <h2>檢定沒拒絕，就不用看圖？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <div class="card dark"><h3>⚠️ 常見誤解</h3><p class="small">「Shapiro–Wilk p = 0.86，不用畫殘差圖了。」</p></div>
+    </div>
+    <div class="col" style="flex:1.2">
+      <ul>
+        <li>樣本小：檢定力低，有問題也可能不顯著</li>
+        <li>樣本大：微不足道的偏離也會顯著</li>
+        <li>圖能看出問題的<b>樣子</b>，檢定只給一個 p 值</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.15</div>
+  <div class="notes">第 5 章的練習 3 會看到一個「圖很彎、檢定卻不顯著」的例子。</div>
+</section>
+
+<!-- S18 章節 04 -->
+<section class="slide section-slide" data-spec="S18">
+  <div class="stext">
+    <div class="num">04</div>
+    <h2>檢定變異數是否相同</h2>
+    <div class="en-title">Tests for Constant Error Variance</div>
+  </div>
+  <figure class="art"><img src="../../assets/premium_vector-1722610416579-2cdfea7fca29.avif" alt="尺、筆筒與計算機"></figure>
+</section>
+
+<!-- S19 Brown-Forsythe -->
+<section class="slide" data-spec="S19">
+  <div class="kicker">Brown–Forsythe Test</div>
+  <h2>Brown–Forsythe 檢定</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.3">
+      <ol class="steps math">
+        <li>與組中位數的絕對離差：$d_{i1}=\lvert e_{i1}-\tilde e_1\rvert,\ d_{i2}=\lvert e_{i2}-\tilde e_2\rvert$</li>
+        <li>兩樣本 t：$t^*_{BF}=\dfrac{\bar d_1-\bar d_2}{s\sqrt{1/n_1+1/n_2}}\ \sim\ t_{n-2}$</li>
+      </ol>
+      <ul class="small">
+        <li>用中位數：穩健，不需要常態</li>
+        <li>Toluca：批量 20–70（13 筆）vs. 80–120（12 筆）</li>
+        <li>$t^*_{BF}=1.316<2.069$，p = 0.201</li>
+      </ul>
+    </div>
+    <div class="col">
+      <table class="compact">
+        <tr><th>Toluca</th><th class="num">第 1 組</th><th class="num">第 2 組</th></tr>
+        <tr><td>中位數 $\tilde e$</td><td class="num">−19.88</td><td class="num">−2.68</td></tr>
+        <tr><td>$\bar d$</td><td class="num">44.82</td><td class="num">28.45</td></tr>
+      </table>
+      <div class="card key"><h3>📌 結論</h3><p class="small">沒有證據顯示變異數不相同</p></div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.18–20（p.18 的 28.40534 為印刷錯誤，依 wiki 改為 28.45034）</div>
+  <div class="notes">為什麼用中位數？不受極端值影響。講義 p.18 計算式把 28.45034 印成 28.40534，這裡用更正後的數字。先備：兩樣本 t 檢定。</div>
+</section>
+
+<!-- S20 Breusch-Pagan -->
+<section class="slide" data-spec="S20">
+  <div class="kicker">Breusch–Pagan Test</div>
+  <h2>Breusch–Pagan 檢定</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <div class="formula sm">$\log\sigma_i^2=\gamma_0+\gamma_1X_i,\qquad X^2_{BP}=\dfrac{SSR^*/2}{(SSE/n)^2}\ \sim\ \chi^2_1$</div>
+    <div style="display:flex;gap:40px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>$H_0:\gamma_1=0$（變異數相同）</li>
+          <li>$SSR^*$：$e_i^2$ 對 $X_i$ 迴歸的迴歸平方和</li>
+          <li>Toluca：$X^2_{BP}=0.821$，p = 0.365</li>
+        </ul>
+      </div>
+      <div class="col">
+        <table class="compact">
+          <tr><th></th><th>Brown–Forsythe</th><th>Breusch–Pagan</th></tr>
+          <tr><td>需要常態？</td><td>不需要</td><td>需要</td></tr>
+          <tr><td>需要分組？</td><td>需要</td><td>不需要</td></tr>
+          <tr class="focus"><td>Toluca p 值</td><td>0.201</td><td>0.365</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.20–21</div>
+  <div class="notes">也稱 Cook–Weisberg 檢定。直覺：變異數隨 X 變化，殘差平方就會和 X 有關。先備：χ² 分配。</div>
+</section>
+
+<!-- S21 練習 2 -->
+<section class="slide" data-spec="S21">
+  <div class="kicker">Exercise 2 <span class="badge">補充題</span><span class="badge gray">難度 1</span></div>
+  <h2>練習 2：把檢定對應到假設</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <table class="tight">
+        <tr><th>檢定</th></tr>
+        <tr><td>1　常態相關檢定</td></tr>
+        <tr><td>2　Brown–Forsythe</td></tr>
+        <tr><td>3　Breusch–Pagan</td></tr>
+        <tr><td>4　缺適檢定</td></tr>
+        <tr><td>5　Durbin–Watson</td></tr>
+      </table>
+      <ul class="small">
+        <li>(a) 對應到 A 線性、B 變異數、C 常態、D 獨立</li>
+        <li>(b) 寫出至少 3 個檢定的前提</li>
+        <li>(c) p 值都 &gt; 0.05，能說假設都成立嗎？</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">哪個要分組、哪個要常態、哪個要重複觀測？</p></div>
+      <details>
+        <summary>看答案</summary>
+        <p style="font-size:18px"><b>(a)</b> 1–C、2–B、3–B、4–A、5–D</p>
+        <p style="font-size:18px"><b>(b)</b> BF 要分組、不需常態；BP 需要常態；缺適需要重複觀測；DW 需要時間順序</p>
+        <p style="font-size:18px"><b>(c)</b> 不行，仍要看殘差圖</p>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/diagnostic-tests-01（補充題）　·　出處：Lecture 04 p.15–21, 28</div>
+  <div class="notes">缺適檢定第 5 章才講，可以先讓學生猜它檢查哪一個假設。</div>
+</section>
+
+<!-- S22 章節 05 -->
+<section class="slide section-slide" data-spec="S22">
+  <div class="stext">
+    <div class="num">05</div>
+    <h2>缺適檢定</h2>
+    <div class="en-title">The Lack-of-Fit F Test</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1751914322607-d383f5810f65.avif" alt="尺、便利貼與鉛筆"></figure>
+</section>
+
+<!-- S23 純誤差 vs 缺適 -->
+<section class="slide" data-spec="S23">
+  <div class="kicker">Lack of Fit</div>
+  <h2>純誤差 vs. 缺適</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:10px">
+    <div class="formula sm">$\underbrace{Y_{ij}-\hat Y_{ij}}_{\text{誤差}}=\underbrace{(Y_{ij}-\bar Y_j)}_{\text{純誤差}}+\underbrace{(\bar Y_j-\hat Y_{ij})}_{\text{缺適}}$</div>
+    <div style="display:flex;gap:36px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>$H_0$：$E(Y\mid X)=\beta_0+\beta_1X$</li>
+          <li>至少一個 $X$ 水準要有<b>重複觀測</b></li>
+          <li>完整模型 $\mu_j$：各水準自己的平均</li>
+          <li>縮減模型：直線</li>
+        </ul>
+        <div class="card"><h3>📌 先備提醒</h3><p class="small">一般線性檢定（L03）</p></div>
+      </div>
+      <div class="col figure" style="flex:1.1">
+        <svg id="fig-lof" width="500" height="290"></svg>
+        <div class="caption">一個 $X$ 水準上的觀測、水準平均與配適直線（示意圖）</div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.21–23　·　圖為示意圖</div>
+  <div class="notes">關鍵直覺：純誤差只看同一個 X 下 Y 差多少，和模型形狀無關。只有一個觀測的水準不貢獻純誤差。</div>
+</section>
+
+<!-- S24 統計量 -->
+<section class="slide" data-spec="S24">
+  <div class="kicker">Lack-of-Fit F Test</div>
+  <h2>缺適檢定的統計量</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.8">
+      <ol class="steps math">
+        <li>分解：$SSE=SSPE+SSLF$；自由度 $n-2=(n-c)+(c-2)$</li>
+        <li>統計量：$F^*=\dfrac{SSLF/(c-2)}{SSPE/(n-c)}=\dfrac{MSLF}{MSPE}\ \sim\ F_{c-2,\,n-c}$</li>
+        <li>期望均方：$E(MSPE)=\sigma^2,\quad E(MSLF)=\sigma^2+\dfrac{\sum n_j[\mu_j-\beta_0-\beta_1X_j]^2}{c-2}$</li>
+      </ol>
+      <ul class="small">
+        <li>$F^*>F(1-\alpha;\,c-2,\,n-c)$ → 迴歸函數<span class="hl">不是線性</span></li>
+        <li>多元迴歸也能用，但很少有重複觀測</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.22–23</div>
+  <div class="notes">用期望均方解釋：直線正確時兩個均方都估計 σ²，F 接近 1；不正確時 MSLF 會變大。</div>
+</section>
+
+<!-- S25 小例題 -->
+<section class="slide" data-spec="S25">
+  <div class="kicker">Example · Toy Data</div>
+  <h2>小例題：6 筆資料</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <table class="compact" style="width:auto">
+      <tr><th>$X$</th><td class="num">1</td><td class="num">1</td><td class="num">2</td><td class="num">4</td><td class="num">4</td><td class="num">4</td></tr>
+      <tr><th>$Y$</th><td class="num">6</td><td class="num">10</td><td class="num">12</td><td class="num">14</td><td class="num">17</td><td class="num">20</td></tr>
+    </table>
+    <div style="display:flex;gap:40px">
+      <div class="col">
+        <ul class="small">
+          <li>$X=1$：平均 8，貢獻 8；$X=4$：平均 17，貢獻 18</li>
+          <li>$X=2$ 只有一筆，不貢獻純誤差</li>
+          <li>$SSPE=26$（df 3）；$SSE=26.794$（df 4）</li>
+          <li>$SSLF=0.794$（df 1）</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="formula sm">$F^*=\dfrac{0.794/1}{26/3}=0.0916,\quad p=0.782$</div>
+        <div class="card key"><h3>📌 結論</h3><p class="small">不拒絕 $H_0$：沒有缺適的證據</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.23–26</div>
+  <div class="notes">先讓學生找出哪些 X 有重複觀測，再算各水準的純誤差。配適線 Ŷ = 5.3235 + 2.9412X。</div>
+</section>
+
+<!-- S26 銀行例題 -->
+<section class="slide" data-spec="S26">
+  <div class="kicker">Example · Bank <span class="badge">補充計算</span></div>
+  <h2>銀行例題：直線夠用嗎？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <ul class="small">
+        <li>$X$：最低初次存款；$Y$：新開戶數；11 家分行</li>
+        <li>6 個存款水準，多數有兩家分行</li>
+        <li>🤔 直線配適 $\hat Y=50.72+0.4867X$ 夠好嗎？</li>
+      </ul>
+      <details>
+        <summary>揭曉：缺適檢定</summary>
+        <p style="font-size:18px">$SSPE=1{,}148$（df 5）、$SSLF=13{,}594$（df 4）</p>
+        <div class="formula xs">$F^*=\dfrac{13{,}594/4}{1{,}148/5}=14.80>F(0.95;4,5)=5.19$</div>
+        <p style="font-size:18px"><b>拒絕：迴歸函數不是線性</b></p>
+      </details>
+    </div>
+    <div class="col figure">
+      <svg id="fig-bank" width="470" height="320"></svg>
+      <div class="caption">黑點：11 筆資料；桃紅：各水準平均；灰線：配適直線（資料取自 wiki）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 04 p.26–28；檢定結果依講義公式補充計算，與課本一致</div>
+  <div class="notes">講義只給資料與程式碼，檢定結果依講義公式補充計算，與課本一致。最低存款太高反而減少開戶。和小例題對照：一個不拒絕、一個強烈拒絕。</div>
+</section>
+
+<!-- S27 練習 3 -->
+<section class="slide" data-spec="S27">
+  <div class="kicker">Exercise 3 <span class="badge">補充題</span><span class="badge gray">難度 2</span></div>
+  <h2>練習 3：手算缺適檢定</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <table class="compact">
+        <tr><th>$X$</th><td class="num">1</td><td class="num">1</td><td class="num">2</td><td class="num">2</td><td class="num">3</td><td class="num">3</td></tr>
+        <tr><th>$Y$</th><td class="num">2</td><td class="num">4</td><td class="num">7</td><td class="num">9</td><td class="num">6</td><td class="num">8</td></tr>
+      </table>
+      <ul class="small">
+        <li>(a) 配適直線，求 $SSE$</li>
+        <li>(b) 求 $SSPE$、$SSLF$ 與自由度</li>
+        <li>(c) α = 0.05 檢定，$F(0.95;1,3)=10.13$</li>
+        <li>(d) 平均 3、8、7 明顯彎曲，為何不顯著？</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">$\bar X=2$、$\bar Y=6$</p></div>
+      <details>
+        <summary>看答案</summary>
+        <p style="font-size:18px"><b>(a)</b> $\hat Y=2+2X$，$SSE=18$</p>
+        <p style="font-size:18px"><b>(b)</b> $SSPE=6$（df 3）、$SSLF=12$（df 1）</p>
+        <p style="font-size:18px"><b>(c)</b> $F^*=6.0<10.13$，不拒絕</p>
+        <p style="font-size:18px"><b>(d)</b> 純誤差只有 3 個自由度，檢定力低，圖仍值得重視</p>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/lack-of-fit-01（補充題）　·　出處：Lecture 04 p.21–23</div>
+  <div class="notes">(d) 呼應第 3 章：檢定不能取代圖形。</div>
+</section>
+
+<!-- S28 回顧 -->
+<section class="slide" data-spec="S28">
+  <div class="kicker">Recap</div>
+  <h2>重點回顧</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:14px">
+    <table class="tight">
+      <tr><th>要檢查的</th><th>圖形</th><th>檢定</th></tr>
+      <tr><td>線性</td><td>$e$ 對 $\hat Y$（加 lowess）</td><td>缺適檢定</td></tr>
+      <tr><td>變異數相同</td><td>$e$、$\lvert e\rvert$ 對 $\hat Y$</td><td>Brown–Forsythe、Breusch–Pagan</td></tr>
+      <tr><td>常態</td><td>常態機率圖</td><td>常態相關、Shapiro–Wilk</td></tr>
+      <tr><td>獨立</td><td>$e$ 對時間</td><td>Durbin–Watson（之後）</td></tr>
+      <tr><td>離群值</td><td>$\lvert r_i\rvert>3$</td><td>離群值檢定（之後）</td></tr>
+      <tr><td>遺漏變數</td><td>$e$ 對其他變數</td><td>—</td></tr>
+    </table>
+    <div class="card key"><h3>📌 下一份</h3><p class="small">發現問題後怎麼補救（L05）：先看圖，再用檢定確認，然後補救、再診斷</p></div>
+  </div>
+  <div class="src">內容整理自 wiki：sources/lecture-04 及相關頁面</div>
+  <div class="notes">預告 Lecture 05：轉換 X、轉換 Y、Box–Cox，以及「診斷 → 補救 → 再診斷」的循環。</div>
+</section>
+
+</div></div>
+<script>
+/* ---------- 本份簡報的圖（配色：資料點 Ink、主要線條桃紅、次要線條灰） ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+const {C, el, rng, gauss} = SK;
+const txt = (s,x,y,t,o={}) => el(s,'text',Object.assign({x,y,'font-size':13,fill:C.g500},o),t);
+function fit(xs,ys){ const n=xs.length, mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+  let sxy=0,sxx=0; xs.forEach((x,i)=>{sxy+=(x-mx)*(ys[i]-my); sxx+=(x-mx)**2;}); const b1=sxy/sxx; return [my-b1*mx,b1]; }
+function panel(s,ox,oy,w,h,xl,yl){
+  el(s,'line',{x1:ox,y1:oy+h/2,x2:ox+w,y2:oy+h/2,stroke:C.g300,'stroke-width':1.2,'stroke-dasharray':'4 4'});
+  el(s,'line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:C.g400,'stroke-width':1.2});
+  el(s,'line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:C.g400,'stroke-width':1.2});
+  if (xl) txt(s,ox+w,oy+h+18,xl,{'text-anchor':'end'});
+  if (yl) txt(s,ox+6,oy+12,yl);
+}
+
+/* S09 三種殘差圖 */
+(function(){
+  const s=document.getElementById('fig-patterns'), r=rng(9);
+  const W=300,H=170,top=20, xs=[40,380,720];
+  const shapes=[t=>({m:0,sd:1}), t=>({m:2.2*(2*t-1)**2-0.8,sd:.45}), t=>({m:0,sd:.12+2.3*t})];
+  ['(a)','(b)','(c)'].forEach((lab,k)=>{
+    const ox=xs[k]; panel(s,ox,top,W,H,'Ŷ','e');
+    for(let i=0;i<40;i++){ const t=(i+r()*.8)/40, sp=shapes[k](t), e=Math.max(-2.7,Math.min(2.7,sp.m+gauss(r)*sp.sd*0.8));
+      el(s,'circle',{cx:ox+10+t*(W-20),cy:top+H/2-e*28,r:4,fill:C.ink,opacity:.8}); }
+    txt(s,ox+W/2,top+H+42,lab,{'text-anchor':'middle',fill:C.ink,'font-size':16,'font-weight':700});
+  });
+})();
+
+/* S10 時間趨勢與分組 */
+(function(){
+  const s=document.getElementById('fig-time'), r=rng(4);
+  panel(s,40,15,420,160,'時間順序','e');
+  for(let i=0;i<24;i++){ const t=i/23, e=-1.6+3.2*t+gauss(r)*.45; el(s,'circle',{cx:50+t*400,cy:95-e*24,r:4.5,fill:C.ink,opacity:.85}); }
+  el(s,'line',{x1:50,y1:95+1.6*24,x2:450,y2:95-1.6*24,stroke:C.pink,'stroke-width':2.5,opacity:.8});
+  const g=document.getElementById('fig-group'), r2=rng(8);
+  panel(g,40,15,420,160,'年齡 X','e');
+  for(let i=0;i<26;i++){ const A=i%2===0, t=r2(), e=(A?1.1:-1.1)+gauss(r2)*.5;
+    el(g,'circle',{cx:50+t*400,cy:95-e*26,r:5,fill:A?C.pink:C.ink,opacity:.85}); }
+  txt(g,452,32,'● A 公司',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  txt(g,452,168,'● B 公司',{'text-anchor':'end',fill:C.ink,'font-size':14});
+})();
+
+/* S11 離群值 */
+(function(){
+  const s=document.getElementById('fig-outlier'), r=rng(12);
+  el(s,'line',{x1:45,y1:270,x2:440,y2:270,stroke:C.g400,'stroke-width':1.2});
+  el(s,'line',{x1:45,y1:270,x2:45,y2:15,stroke:C.g400,'stroke-width':1.2});
+  const X=x=>45+x*38, Y=y=>270-y*22;
+  const xs=[],ys=[]; for(let i=0;i<14;i++){ const x=0.5+i*0.62; xs.push(x); ys.push(1.2+0.8*x+gauss(r)*0.5); }
+  const [a0,b0]=fit(xs,ys); const xo=9.6, yo=1.5; const [a1,b1]=fit([...xs,xo],[...ys,yo]);
+  el(s,'line',{x1:X(0.2),y1:Y(a0+b0*0.2),x2:X(10.2),y2:Y(a0+b0*10.2),stroke:C.g500,'stroke-width':2.2,'stroke-dasharray':'7 5'});
+  el(s,'line',{x1:X(0.2),y1:Y(a1+b1*0.2),x2:X(10.2),y2:Y(a1+b1*10.2),stroke:C.pink,'stroke-width':3});
+  xs.forEach((x,i)=>el(s,'circle',{cx:X(x),cy:Y(ys[i]),r:5,fill:C.ink,opacity:.85}));
+  el(s,'circle',{cx:X(xo),cy:Y(yo),r:7,fill:'none',stroke:C.pink,'stroke-width':2.5});
+  el(s,'circle',{cx:X(xo),cy:Y(yo),r:4,fill:C.ink});
+  txt(s,X(xo)-12,Y(yo)+4,'離群值',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  txt(s,440,288,'X',{'text-anchor':'end'}); txt(s,52,27,'Y');
+})();
+
+/* S15 三種 QQ 圖 */
+(function(){
+  const s=document.getElementById('fig-qq'), n=30;
+  const z=p=>4.91*(Math.pow(p,0.14)-Math.pow(1-p,0.14));
+  const qs=[...Array(n)].map((_,i)=>z((i+1-0.375)/(n+0.25)));
+  const forms=[q=>q, q=>{const v=Math.exp(0.55*q); return (v-1.15)*1.6;}, q=>q*(1+0.18*q*q)];
+  const labs=['常態：接近直線','右偏：向上彎','重尾：兩端翹離直線'];
+  [40,380,720].forEach((ox,k)=>{
+    const W=300,H=170,top=10;
+    el(s,'line',{x1:ox,y1:top+H,x2:ox+W,y2:top+H,stroke:C.g400,'stroke-width':1.2});
+    el(s,'line',{x1:ox,y1:top,x2:ox,y2:top+H,stroke:C.g400,'stroke-width':1.2});
+    const X=q=>ox+W/2+q*58, Y=v=>top+H/2-v*30;
+    el(s,'line',{x1:X(-2.4),y1:Y(-2.4),x2:X(2.4),y2:Y(2.4),stroke:C.pink,'stroke-width':2,opacity:.85});
+    qs.forEach(q=>{ const v=Math.max(-2.7,Math.min(2.7,forms[k](q))); el(s,'circle',{cx:X(q),cy:Y(v),r:4,fill:C.ink,opacity:.85}); });
+    txt(s,ox+W/2,top+H+36,labs[k],{'text-anchor':'middle',fill:C.ink,'font-size':15});
+  });
+})();
+
+/* S23 純誤差與缺適 */
+(function(){
+  const s=document.getElementById('fig-lof');
+  el(s,'line',{x1:50,y1:260,x2:480,y2:260,stroke:C.g400,'stroke-width':1.2});
+  el(s,'line',{x1:50,y1:260,x2:50,y2:15,stroke:C.g400,'stroke-width':1.2});
+  const line=x=>230-(x-60)*0.42;
+  el(s,'line',{x1:60,y1:line(60),x2:470,y2:line(470),stroke:C.g500,'stroke-width':2.5});
+  txt(s,470,line(470)+22,'配適直線 Ŷ',{'text-anchor':'end',fill:C.g700,'font-size':14});
+  const xj=270, ys=[60,95,128], ybar=(ys[0]+ys[1]+ys[2])/3, yhat=line(xj), yi=ys[0];
+  el(s,'line',{x1:xj-40,y1:ybar,x2:xj+40,y2:ybar,stroke:C.pink,'stroke-width':2.5});
+  ys.forEach(y=>el(s,'circle',{cx:xj,cy:y,r:6,fill:C.ink}));
+  el(s,'line',{x1:xj-16,y1:yi,x2:xj-16,y2:ybar,stroke:C.ink,'stroke-width':3});
+  el(s,'line',{x1:xj+16,y1:ybar,x2:xj+16,y2:yhat,stroke:C.pink,'stroke-width':3});
+  el(s,'circle',{cx:xj,cy:yhat,r:5,fill:C.g500});
+  txt(s,xj-24,(yi+ybar)/2+4,'純誤差 Yᵢⱼ − Ȳⱼ',{'text-anchor':'end',fill:C.ink,'font-size':14});
+  txt(s,xj-24,(ybar+yhat)/2+8,'缺適 Ȳⱼ − Ŷⱼ',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  txt(s,xj+46,ybar+4,'Ȳⱼ',{fill:C.pinkInk,'font-size':14});
+  txt(s,xj,278,'Xⱼ',{'text-anchor':'middle',fill:C.ink,'font-size':14});
+})();
+
+/* S26 銀行資料 */
+(function(){
+  const s=document.getElementById('fig-bank');
+  const xs=[75,75,100,100,125,125,150,175,175,200,200], ys=[28,42,112,136,160,150,152,156,124,124,104];
+  const X=x=>60+(x-50)*390/175, Y=y=>270-y*1.45;
+  el(s,'line',{x1:60,y1:270,x2:455,y2:270,stroke:C.g400,'stroke-width':1.2});
+  el(s,'line',{x1:60,y1:270,x2:60,y2:15,stroke:C.g400,'stroke-width':1.2});
+  el(s,'line',{x1:X(65),y1:Y(50.72+0.4867*65),x2:X(210),y2:Y(50.72+0.4867*210),stroke:C.g500,'stroke-width':2.5});
+  xs.forEach((x,i)=>el(s,'circle',{cx:X(x),cy:Y(ys[i]),r:5,fill:C.ink,opacity:.85}));
+  const lv=[75,100,125,150,175,200], mean=[35,124,155,152,140,114];
+  let d=''; lv.forEach((x,i)=>{ d+=(d?'L':'M')+X(x)+','+Y(mean[i]); });
+  el(s,'path',{d,fill:'none',stroke:C.pink,'stroke-width':2,'stroke-dasharray':'5 4'});
+  lv.forEach((x,i)=>el(s,'rect',{x:X(x)-5,y:Y(mean[i])-5,width:10,height:10,fill:C.pink}));
+  [75,100,125,150,175,200].forEach(x=>txt(s,X(x),288,x,{'text-anchor':'middle'}));
+  [0,50,100,150].forEach(y=>txt(s,52,Y(y)+4,y,{'text-anchor':'end'}));
+  txt(s,455,262,'最低存款 X',{'text-anchor':'end'}); txt(s,68,22,'新開戶數 Y');
+})();
+});
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@
 - **簡報**（GitHub Pages）：
   - [迴歸分析導論](https://yichen940827.github.io/regression-llm-wiki/outputs/slides/regression-introduction.html)（Lecture 01）
   - [簡單線性迴歸的基本理論](https://yichen940827.github.io/regression-llm-wiki/outputs/slides/simple-linear-regression.html)（Lecture 02）
+  - [簡單線性迴歸的模型診斷](https://yichen940827.github.io/regression-llm-wiki/outputs/slides/slr-diagnostics.html)（Lecture 04）
   - [圖文講義：迴歸分析導論](https://yichen940827.github.io/regression-llm-wiki/outputs/handouts/regression-introduction.html)
   - 操作：← → 換頁、N 講者備註、F 全螢幕。
 
