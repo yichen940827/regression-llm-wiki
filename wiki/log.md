@@ -77,3 +77,10 @@
 - 新建：sources/lecture-05；concepts/remedial-measures、variable-transformations、interpreting-transformed-models；methods/box-cox-transformation、lowess-smoothing；examples/sales-training、plasma-levels；misconceptions/transform-y-only-fixes-variance、transformed-coefficient-original-scale；exercises/choose-transformation-01、log-interpretation-01、box-cox-01（補充題，使用者同意）
 - 更新：assumptions/linearity-of-regression-function、constant-error-variance、independent-errors、normal-errors（新增或改寫「對策」）；concepts/outliers（處理方式、門檻差異）、model-diagnostics；misconceptions/delete-outliers；methods/residual-plots、normal-probability-plot；notation、roadmap（新增 1.4）、index（box-cox-transformation 移出待建頁面；新增 robust-regression、generalized-least-squares）
 - 待確認（已依使用者決定處理）：p.7 圖的 σ² 與轉換對應與標準結果相反，wiki 採標準對應並加註；p.9 Box–Cox 的 SSE 比較需標準化，以補充附上 ALSM 公式並驗算 Table 3.9；離群值門檻 |r_i|>4（L05）與 >3（L04）並列；p.14 log 底數以補充說明
+
+## [2026-11-25] slides | 簡單線性迴歸的基本理論（Lecture 02）
+- 節點 0–1：outputs/slides/plans/simple-linear-regression/outline.md（素材 21 頁、大綱 29 頁），使用者確認
+- 節點 2：spec.md（29 頁），自動檢查第 1 次全部通過，使用者確認
+- 節點 3：outputs/slides/simple-linear-regression.html，呈現檢查第 1 次 2 項未過，自動修正 1 次後通過
+- 檢查紀錄：checks.md；等待使用者檢閱
+- 使用者檢閱通過，簡報定案

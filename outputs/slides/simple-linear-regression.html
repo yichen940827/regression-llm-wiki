@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>簡單線性迴歸的基本理論</title>
+<!-- 由 outputs/slides/plans/simple-linear-regression/spec.md（2026-11-25 確認）產生 -->
+<link rel="stylesheet" href="theme/slides.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" defer></script>
+<script src="theme/slides.js"></script>
+<style>
+/* 本份簡報的小調整（只調間距與字級，樣式仍來自 theme） */
+.steps.math li{padding-left:44px;margin:6px 0;font-size:19px;line-height:1.5}
+.steps.math li::before{font-size:26px;top:2px}
+.formula.sm{font-size:21px}
+.formula.xs{font-size:18px}
+table.compact th,table.compact td{padding:7px 12px}
+table.compact{font-size:18px}
+.recap .card h3{font-size:19px}
+.recap .card p{font-size:17px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- S01 封面 -->
+<section class="slide title-slide" data-spec="S01">
+  <div class="tleft">
+    <div class="kicker">Regression Analysis I · Lecture 02</div>
+    <h1>簡單線性迴歸的基本理論</h1>
+    <div class="sub">Simple Linear Regression: Basic Theory</div>
+    <div class="bar"></div>
+    <div class="meta">模型與假設 · 最小平方法 · 估計量的性質 · 最大概似<br>對應課本：ALSM Chapter 1</div>
+  </div>
+  <div class="tright"><figure class="art"><img src="../../assets/vector-1761074651005-97a2e57eef29.avif" alt="等角視角的資料中心與分析團隊"></figure></div>
+  <div class="notes">這一講是整門課的地基：模型怎麼寫、參數怎麼估、估計量為什麼好。之後的推論、診斷都建立在這裡。</div>
+</section>
+
+<!-- S02 路線 -->
+<section class="slide" data-spec="S02">
+  <div class="kicker">Roadmap</div>
+  <h2>今天的路線</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <ol class="steps">
+        <li>簡單線性迴歸模型</li>
+        <li>最小平方法</li>
+        <li>估計量的性質</li>
+      </ol>
+    </div>
+    <div class="col">
+      <ol class="steps" style="counter-reset:s 3">
+        <li>配適值、殘差與 MSE</li>
+        <li>常態誤差與最大概似</li>
+      </ol>
+      <div class="card"><h3>📌 先備提醒</h3><p class="small">迴歸函數 $E(Y\mid X)$：給定 $X$ 時 $Y$ 的平均（導論）</p></div>
+    </div>
+  </div>
+  <div class="notes">先花 30 秒複習導論的迴歸函數：今天要把它具體寫成一條直線。</div>
+</section>
+
+<!-- S03 章節 01 -->
+<section class="slide section-slide" data-spec="S03">
+  <div class="stext">
+    <div class="num">01</div>
+    <h2>簡單線性迴歸模型</h2>
+    <div class="en-title">The Simple Linear Regression Model</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1739803877156-e5ccecef3654.avif" alt="長條圖與趨勢線"></figure>
+</section>
+
+<!-- S04 模型與三條誤差假設 -->
+<section class="slide" data-spec="S04">
+  <div class="kicker">SLR Model</div>
+  <h2>模型與三條誤差假設</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:18px">
+    <div class="formula" style="font-size:32px">$Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i,\quad i = 1,\dots,n$</div>
+    <div class="grid3">
+      <div class="card key"><h3>① 平均為 0</h3><div class="formula sm">$E(\varepsilon_i)=0$</div></div>
+      <div class="card key"><h3>② 變異數相同</h3><div class="formula sm">$Var(\varepsilon_i)=\sigma^2$</div></div>
+      <div class="card key"><h3>③ 不相關</h3><div class="formula sm">$Cov(\varepsilon_i,\varepsilon_j)=0,\ i\ne j$</div></div>
+    </div>
+    <ul>
+      <li>$X_i$ 視為<b>固定、已知</b>的數</li>
+      <li>$\beta_0, \beta_1$ 是<b>未知但固定</b>的參數</li>
+      <li>$\varepsilon_i$ 是隨機誤差，此時<span class="hl">還沒假設分配</span></li>
+    </ul>
+  </div>
+  <div class="src">出處：Lecture 02 p.2</div>
+  <div class="notes">「平均為 0」不是每個誤差都很小，個別誤差可大可小。三條假設可以對應到 Y_i 的平均、變異數、共變異數，下一頁並排寫。</div>
+</section>
+
+<!-- S05 Y 的分配 -->
+<section class="slide" data-spec="S05">
+  <div class="kicker">Example · Electrical Distributor</div>
+  <h2>$Y_i$ 的分配：電器經銷商</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:12px">
+    <div class="formula sm">$E(Y_i\mid X_i)=\beta_0+\beta_1X_i,\quad Var(Y_i\mid X_i)=\sigma^2,\quad Cov(Y_i,Y_j)=0$</div>
+    <div style="display:flex;gap:40px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>例：$E(Y\mid X)=9.5+2.1X$（$X$ 標案件數、$Y$ 工時）</li>
+          <li>某週 $X_i=45$：$E(Y_i)=9.5+2.1(45)=104$</li>
+          <li>實際 $Y_i=108$，誤差 $\varepsilon_i=108-104=\mathbf{4}$</li>
+        </ul>
+        <div class="card key"><h3>💡 直覺</h3><p class="small">母體可以看成很多子母體，每個 $X$ 一個</p></div>
+      </div>
+      <div class="col figure" style="flex:1.1">
+        <svg id="fig-ydist" width="500" height="300"></svg>
+        <div class="caption">每個 $X$ 上 $Y$ 都有一個分配，平均落在迴歸線上（示意圖）</div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.2–3</div>
+  <div class="notes">這裡參數是「已知」的假想情境，實務上要從資料估計。可以讓學生自己算 X=30 的平均工時。</div>
+</section>
+
+<!-- S06 為什麼叫線性 -->
+<section class="slide" data-spec="S06">
+  <div class="kicker">Why "Linear"?</div>
+  <h2>為什麼叫「線性」？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.4">
+      <ul>
+        <li>$Y=\beta_0+\beta_1e^X+\varepsilon$：<b>線性</b>模型</li>
+        <li>多項式 $Y=\beta_0+\beta_1X+\beta_2X^2+\beta_3X^3+\varepsilon$：<b>線性</b>模型</li>
+        <li>$Y=\beta_0+X^{\beta_1}+\varepsilon$：<b>非線性</b>模型</li>
+        <li>對參數和 $X$ 都線性：<b>一階模型</b></li>
+      </ul>
+      <div class="card key"><h3>📌 重點</h3><p class="small">線性指的是<span class="hl">對參數 $\beta$ 線性</span>，不是 $Y$ 和 $X$ 畫出來是直線</p></div>
+    </div>
+    <div class="col">
+      <div class="card dark">
+        <h3>⚠️ 常見誤解</h3>
+        <p class="small">「曲線關係就不能用線性模型。」</p>
+        <p class="small muted">✗ 加入 $X^2$、$e^X$ 等，仍然是線性模型</p>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.4</div>
+  <div class="notes">判斷方法：把參數當未知數，若平均函數是「參數 × 已知的 X 函數」相加，就是線性模型。</div>
+</section>
+
+<!-- S07 練習 1 -->
+<section class="slide" data-spec="S07">
+  <div class="kicker">Exercise 1 <span class="badge">補充題</span><span class="badge gray">難度 1</span></div>
+  <h2>練習 1：線性還是非線性？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <p class="small">判斷下列五個模型對參數是否線性：</p>
+      <table class="compact">
+        <tr><th>題</th><th>模型</th></tr>
+        <tr><td>1</td><td>$Y=\beta_0+\beta_1\log X+\varepsilon$</td></tr>
+        <tr><td>2</td><td>$Y=\beta_0+\beta_1X+\beta_2X^2+\varepsilon$</td></tr>
+        <tr><td>3</td><td>$Y=\beta_0e^{\beta_1X}+\varepsilon$</td></tr>
+        <tr><td>4</td><td>$Y=\beta_0+\beta_1(1/X)+\varepsilon$</td></tr>
+        <tr><td>5</td><td>$Y=\beta_0+X^{\beta_1}+\varepsilon$</td></tr>
+      </table>
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">每個參數是否只乘上一個已知的 $X$ 函數？</p></div>
+    </div>
+    <div class="col">
+      <details>
+        <summary>看答案</summary>
+        <table class="compact">
+          <tr><th>題</th><th>判斷</th><th>理由</th></tr>
+          <tr><td>1</td><td>線性</td><td>令 $Z=\log X$</td></tr>
+          <tr><td>2</td><td>線性</td><td>多項式迴歸</td></tr>
+          <tr><td>3</td><td>非線性</td><td>$\beta_1$ 在指數裡</td></tr>
+          <tr><td>4</td><td>線性</td><td>令 $Z=1/X$</td></tr>
+          <tr><td>5</td><td>非線性</td><td>$\beta_1$ 在指數裡</td></tr>
+        </table>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/linear-model-01（補充題）　·　出處：Lecture 02 p.4</div>
+  <div class="notes">給學生 2 分鐘，再請人說出第 3 題為什麼不是線性。</div>
+</section>
+
+<!-- S08 參數的意義 -->
+<section class="slide" data-spec="S08">
+  <div class="kicker">Parameters</div>
+  <h2>參數的意義</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.3">
+      <div class="formula sm">$E(Y\mid X=x+1)-E(Y\mid X=x)=\beta_1$</div>
+      <ul>
+        <li>$\beta_1$：$X$ 增加 1 單位，$Y$ 的<b>平均</b>變化量</li>
+        <li>$\beta_0$：$X=0$ 時 $Y$ 的平均</li>
+        <li>例：多 1 件標案，平均工時多 <b>2.1</b> 小時</li>
+        <li>模型只適用每週 20–80 件，<span class="hl">9.5 沒有獨立意義</span></li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card key"><h3>📌 重點</h3><p class="small">要說「$Y$ 的<b>平均</b>增加 $\beta_1$」，不是「$Y$ 增加 $\beta_1$」</p></div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.4–5</div>
+  <div class="notes">截距解讀其實是一種外插；第 2 章的身高體重例題會看到更誇張的截距。</div>
+</section>
+
+<!-- S09 章節 02 -->
+<section class="slide section-slide" data-spec="S09">
+  <div class="stext">
+    <div class="num">02</div>
+    <h2>最小平方法</h2>
+    <div class="en-title">The Method of Least Squares</div>
+  </div>
+  <figure class="art"><img src="../../assets/premium_vector-1720798339135-44bac9493e70.avif" alt="背包、筆記本與計算機圖示"></figure>
+</section>
+
+<!-- S10 選哪一條線 -->
+<section class="slide" data-spec="S10">
+  <div class="kicker">Least Squares</div>
+  <h2>這麼多條線，選哪一條？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <div class="formula">$Q=\sum_{i=1}^n(Y_i-\beta_0-\beta_1X_i)^2$</div>
+      <ul class="small">
+        <li>每個點到直線的<b>垂直距離</b>就是誤差</li>
+        <li>直接相加會正負抵消</li>
+        <li>絕對值也可以，但平方容易微分、估計量性質好</li>
+        <li>讓 $Q$ 最小的 $b_0, b_1$ 就是<span class="hl">最小平方估計</span></li>
+      </ul>
+    </div>
+    <div class="col figure" style="flex:1.15">
+      <svg id="fig-ls" width="540" height="300"></svg>
+      <div class="caption">同一組點、兩條線：殘差平方畫成正方形，LS 線的面積總和最小（示意圖）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.5–6　·　圖為示意圖</div>
+  <div class="notes">學生常問為什麼不用絕對值：平方可以微分、解有公式，估計量也有很多好性質（第 3 章）。</div>
+</section>
+
+<!-- S11 推導 -->
+<section class="slide" data-spec="S11">
+  <div class="kicker">Derivation</div>
+  <h2>推導：正規方程式</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.75">
+      <ol class="steps math">
+        <li>偏微分：$\dfrac{\partial Q}{\partial\beta_0}=-2\sum(Y_i-\beta_0-\beta_1X_i)$，$\dfrac{\partial Q}{\partial\beta_1}=-2\sum(Y_i-\beta_0-\beta_1X_i)X_i$</li>
+        <li>正規方程式：$\sum(Y_i-b_0-b_1X_i)=0$，$\sum(Y_i-b_0-b_1X_i)X_i=0$</li>
+        <li>由第一條：$b_0=\bar Y-b_1\bar X$</li>
+        <li>代入第二條：$b_1=\dfrac{\sum(X_i-\bar X)(Y_i-\bar Y)}{\sum(X_i-\bar X)^2}=\dfrac{S_{XY}}{S_{XX}}$</li>
+      </ol>
+    </div>
+    <div class="col">
+      <div class="card key"><h3>💡 直覺</h3><p class="small">兩條正規方程式就是 $\sum e_i=0$、$\sum X_ie_i=0$</p></div>
+      <p class="small muted">二階導數確認是最小值</p>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.6–7</div>
+  <div class="notes">第 4 步代數最容易出錯，板書時把 ΣXᵢΣYᵢ/n 寫成 n·X̄·Ȳ 幫助辨識。</div>
+</section>
+
+<!-- S12 Toluca -->
+<section class="slide" data-spec="S12">
+  <div class="kicker">Example · Toluca Company</div>
+  <h2>Toluca 公司：批量與工時</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <table class="compact">
+        <tr><th>量</th><th class="num">值</th></tr>
+        <tr><td>$S_{XY}=\sum(X_i-\bar X)(Y_i-\bar Y)$</td><td class="num">70,690</td></tr>
+        <tr><td>$S_{XX}=\sum(X_i-\bar X)^2$</td><td class="num">19,800</td></tr>
+        <tr><td>$\bar X$、$\bar Y$</td><td class="num">70.0、312.28</td></tr>
+      </table>
+      <div class="formula xs">$b_1=\dfrac{70{,}690}{19{,}800}=3.5702$</div>
+      <div class="formula xs">$b_0=312.28-3.5702(70.0)=62.37$</div>
+      <ul class="small">
+        <li>25 次生產紀錄，找出最佳批量</li>
+        <li>$\hat Y=62.37+3.5702X$：每多 1 件，平均工時多 <b>3.57</b> 小時</li>
+        <li>只適用資料中的批量範圍（約 20–120 件）</li>
+      </ul>
+    </div>
+    <div class="col figure" style="flex:.95">
+      <svg id="fig-toluca" width="470" height="330"></svg>
+      <div class="caption">配適線依講義數字繪製，未畫原始資料點（示意圖）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.7–8, 13</div>
+  <div class="notes">這筆資料會一路用到推論與診斷。解讀時強調兩個重點：「平均」工時、「資料範圍內」。</div>
+</section>
+
+<!-- S13 身高體重 -->
+<section class="slide" data-spec="S13">
+  <div class="kicker">Example · Height &amp; Weight</div>
+  <h2>身高 0 英尺，體重 −11.66 磅？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.3">
+      <table class="compact">
+        <tr><th>量</th><th class="num">值</th></tr>
+        <tr><td>$\bar X$（英尺）、$\bar Y$（磅）</td><td class="num">5.86、152.5</td></tr>
+        <tr><td>$S_{XX}$、$S_{XY}$</td><td class="num">2.00、56.04</td></tr>
+      </table>
+      <div class="formula xs">$b_1=56.04/2.00=28.02$</div>
+      <div class="formula xs">$b_0=152.5-28.02\times5.86\approx-11.66$</div>
+      <ul class="small">
+        <li>10 位學生，身高每多 1 英尺，平均體重多 28.02 磅</li>
+        <li>🤔 截距代表什麼？</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card dark">
+        <h3>⚠️ 常見誤解</h3>
+        <p class="small">「截距一定能解讀成 $X=0$ 時的 $Y$。」</p>
+        <p class="small muted">✗ $X=0$ 不合理或在範圍外時，截距沒有實際意義</p>
+      </div>
+      <details>
+        <summary>揭曉</summary>
+        <div class="big-number">−11.66 磅</div>
+        <p class="small">身高 0 時的平均體重，完全不合理：$X=0$ 遠在資料範圍外</p>
+      </details>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.9–10（p.10 的 20.01 為印刷錯誤，依 wiki 改為 28.02）</div>
+  <div class="notes">先秀 −11.66 磅讓學生笑，再問「截距什麼時候有意義？」講義 p.10 把 28.02 印成 20.01，這裡用更正後的數字。</div>
+</section>
+
+<!-- S14 練習 2 -->
+<section class="slide" data-spec="S14">
+  <div class="kicker">Exercise 2 <span class="badge">補充題</span><span class="badge gray">難度 2</span></div>
+  <h2>練習 2：手算最小平方估計</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <table class="compact">
+        <tr><th>$i$</th><th class="num">1</th><th class="num">2</th><th class="num">3</th><th class="num">4</th><th class="num">5</th></tr>
+        <tr><td>$X_i$</td><td class="num">1</td><td class="num">2</td><td class="num">3</td><td class="num">4</td><td class="num">5</td></tr>
+        <tr><td>$Y_i$</td><td class="num">2</td><td class="num">4</td><td class="num">5</td><td class="num">4</td><td class="num">5</td></tr>
+      </table>
+      <ul class="small">
+        <li>(a) 求 $b_0$、$b_1$</li>
+        <li>(b) 求配適值與殘差</li>
+        <li>(c) 驗證 $\sum e_i=0$、$\sum X_ie_i=0$</li>
+      </ul>
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">先算 $\bar X$、$\bar Y$，再算 $S_{XX}$、$S_{XY}$</p></div>
+    </div>
+    <div class="col">
+      <details>
+        <summary>看答案</summary>
+        <p style="font-size:18px">$\bar X=3$、$\bar Y=4$、$S_{XY}=6$、$S_{XX}=10$</p>
+        <p style="font-size:18px">$b_1=0.6$、$b_0=2.2$，$\hat Y=2.2+0.6X$</p>
+        <p style="font-size:18px">$\hat Y_i$ = 2.8, 3.4, 4.0, 4.6, 5.2</p>
+        <p style="font-size:18px">$e_i$ = −0.8, 0.6, 1.0, −0.6, −0.2</p>
+        <p style="font-size:18px">$\sum e_i=0$ ✔　$\sum X_ie_i=0$ ✔</p>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/least-squares-01（補充題）　·　出處：Lecture 02 p.6–7</div>
+  <div class="notes">(c) 正好驗證兩條正規方程式；第 4 章練習 3 會沿用這組殘差。</div>
+</section>
+
+<!-- S15 章節 03 -->
+<section class="slide section-slide" data-spec="S15">
+  <div class="stext">
+    <div class="num">03</div>
+    <h2>估計量的性質</h2>
+    <div class="en-title">Properties of the Least Squares Estimators</div>
+  </div>
+  <figure class="art"><img src="../../assets/premium_vector-1722917987980-0da6ec0a0c59.avif" alt="三角形與數學符號插圖"></figure>
+</section>
+
+<!-- S16 不偏性 -->
+<section class="slide" data-spec="S16">
+  <div class="kicker">Unbiasedness</div>
+  <h2>$b_1$ 是 $Y_i$ 的加權和，所以不偏</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.75">
+      <ol class="steps math">
+        <li>線性組合：$b_1=\sum k_iY_i,\quad k_i=\dfrac{X_i-\bar X}{\sum(X_i-\bar X)^2}$</li>
+        <li>兩個性質：$\sum k_i=0,\quad \sum k_iX_i=1$</li>
+        <li>不偏：$E(b_1)=\sum k_i(\beta_0+\beta_1X_i)=\beta_0\sum k_i+\beta_1\sum k_iX_i=\beta_1$</li>
+      </ol>
+      <ul class="small">
+        <li>$b_0=\sum l_iY_i$ 也是線性組合，同理 $E(b_0)=\beta_0$</li>
+        <li>不偏：平均來說<span class="hl">不會系統性高估或低估</span></li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card"><h3>📌 先備提醒</h3><p class="small">期望值的線性運算：$E(\sum c_iY_i)=\sum c_iE(Y_i)$</p></div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.10–11</div>
+  <div class="notes">Σkᵢxᵢ=1 最常卡住。展開：分子 Σ(Xᵢ−X̄)Xᵢ = Σ(Xᵢ−X̄)² + X̄·Σ(Xᵢ−X̄) = Σ(Xᵢ−X̄)²（補充，非講義內容）。</div>
+</section>
+
+<!-- S17 變異數 -->
+<section class="slide" data-spec="S17">
+  <div class="kicker">Variance</div>
+  <h2>$X$ 越分散，斜率估得越準</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:12px">
+    <div class="formula sm">$Var(b_1)=\sigma^2\sum k_i^2=\dfrac{\sigma^2}{S_{XX}},\qquad Var(b_0)=\sigma^2\left(\dfrac1n+\dfrac{\bar X^2}{S_{XX}}\right)$</div>
+    <div style="display:flex;gap:36px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>用到變異數相同、彼此不相關兩條假設</li>
+          <li>$S_{XX}$ 越大，$b_1$ 越精確</li>
+          <li>$\bar X$ 離 0 越遠，$b_0$ 越不精確</li>
+        </ul>
+        <div class="card"><h3>🤔 想一想</h3><p class="small">要讓斜率更準，$X$ 應該集中還是分散？</p></div>
+      </div>
+      <div class="col figure" style="flex:1.3">
+        <svg id="fig-spread" width="560" height="250"></svg>
+        <div class="caption">同一條真實直線，重複抽樣 12 次的配適線：$X$ 集中時斜率晃得多（示意圖）</div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.11　·　圖為示意圖</div>
+  <div class="notes">Var(b0) 講義寫「可以證明」，不推導。用右圖讓學生自己說出答案。</div>
+</section>
+
+<!-- S18 Gauss-Markov -->
+<section class="slide" data-spec="S18">
+  <div class="kicker">Gauss–Markov Theorem</div>
+  <h2>Gauss–Markov 定理：BLUE</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.2">
+      <div class="formula sm">$Var(b_1)\le Var(b_1^*),\quad Var(b_0)\le Var(b_0^*)$</div>
+      <ul>
+        <li><b>B</b>est 最佳：變異數最小</li>
+        <li><b>L</b>inear 線性：$Y_i$ 的線性組合</li>
+        <li><b>U</b>nbiased 不偏；<b>E</b>stimator 估計量</li>
+        <li>只需三條誤差假設，<span class="hl">不需要常態</span></li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card dark">
+        <h3>⚠️ 常見誤解 <span class="badge">補充</span></h3>
+        <p class="small">「BLUE 代表 LS 比所有估計量都好。」</p>
+        <p class="small muted">✗ 只在<b>線性且不偏</b>的估計量裡最好</p>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.12；誤解卡為補充，非講義內容</div>
+  <div class="notes">證明見 ALSM p.43–44。LS 也是一致估計量。可以連回導論的偏誤–變異取捨：有偏的估計量可能總誤差更小（補充）。</div>
+</section>
+
+<!-- S19 中心化 -->
+<section class="slide" data-spec="S19">
+  <div class="kicker">Centered SLR</div>
+  <h2>中心化的 SLR</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:12px">
+    <div class="formula sm">$Y_i=\beta_0^*+\beta_1(X_i-\bar X)+\varepsilon_i,\quad \beta_0^*=\beta_0+\beta_1\bar X$</div>
+    <div style="display:flex;gap:36px;flex:1;min-height:0">
+      <div class="col">
+        <ul class="small">
+          <li>$b_0^*=\bar Y$，斜率仍是 $b_1=S_{XY}/S_{XX}$</li>
+          <li>$Cov(b_0^*,b_1)=0$</li>
+          <li>配適模型：$\hat Y=\bar Y+b_1(X-\bar X)$</li>
+          <li>截距一定有意義：$X$ 在平均時 $Y$ 的平均</li>
+        </ul>
+      </div>
+      <div class="col figure" style="flex:1.2">
+        <svg id="fig-center" width="540" height="250"></svg>
+        <div class="caption">把縱軸移到 $\bar X$：斜率相同、截距從 $b_0$ 變成 $\bar Y$（示意圖）</div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.15–16　·　圖為示意圖</div>
+  <div class="notes">和截距沒有意義的問題一起講：中心化是讓截距變得有意義的簡單方法。</div>
+</section>
+
+<!-- S20 章節 04 -->
+<section class="slide section-slide" data-spec="S20">
+  <div class="stext">
+    <div class="num">04</div>
+    <h2>配適值、殘差與 MSE</h2>
+    <div class="en-title">Fitted Values, Residuals and MSE</div>
+  </div>
+  <figure class="art"><img src="../../assets/vector-1751914322607-d383f5810f65.avif" alt="尺、便利貼與鉛筆"></figure>
+</section>
+
+<!-- S21 配適值與殘差 -->
+<section class="slide" data-spec="S21">
+  <div class="kicker">Fitted Values · Residuals</div>
+  <h2>配適值與殘差</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.15">
+      <div class="formula sm">$\hat Y_i=b_0+b_1X_i,\qquad e_i=Y_i-\hat Y_i$</div>
+      <table class="compact">
+        <tr><th></th><th>誤差 $\varepsilon_i$</th><th>殘差 $e_i$</th></tr>
+        <tr><td>定義</td><td>$Y_i-(\beta_0+\beta_1X_i)$</td><td>$Y_i-(b_0+b_1X_i)$</td></tr>
+        <tr><td>用的線</td><td>母體迴歸線（未知）</td><td>配適線</td></tr>
+        <tr class="focus"><td>看得到嗎</td><td>看不到</td><td>看得到</td></tr>
+      </table>
+      <ul class="small">
+        <li>Toluca 第 1 筆：$X_1=80$，$\hat Y_1=347.98$</li>
+        <li>觀測 $Y_1=399$，殘差 $e_1=51.02$</li>
+      </ul>
+    </div>
+    <div class="col figure">
+      <svg id="fig-resid" width="430" height="330"></svg>
+      <div class="caption">只畫講義給的第 1 筆觀測（示意圖）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.12–13</div>
+  <div class="notes">學生常把殘差當成誤差，用對照表強調「殘差是用估計的線算的」。殘差是檢查模型的主要工具（Lecture 04）。</div>
+</section>
+
+<!-- S22 六個性質 -->
+<section class="slide" data-spec="S22">
+  <div class="kicker">Properties of the Fitted Line</div>
+  <h2>配適線的 6 個性質</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.5">
+      <table class="compact">
+        <tr><th>#</th><th>性質</th><th>來源</th></tr>
+        <tr class="focus"><td>1</td><td>$\sum e_i=0$</td><td>第一條正規方程式</td></tr>
+        <tr><td>2</td><td>$\sum e_i^2$ 最小</td><td>LS 的定義</td></tr>
+        <tr class="focus"><td>3</td><td>通過 $(\bar X,\bar Y)$</td><td>$b_0=\bar Y-b_1\bar X$</td></tr>
+        <tr><td>4</td><td>$\sum Y_i=\sum\hat Y_i$</td><td>由性質 1</td></tr>
+        <tr><td>5</td><td>$\sum X_ie_i=0$</td><td>第二條正規方程式</td></tr>
+        <tr><td>6</td><td>$\sum\hat Y_ie_i=0$</td><td>由性質 1、5</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <p class="small">這些性質需要模型<b>有截距</b></p>
+      <div class="card"><h3>🤔 想一想</h3><p class="small">為什麼性質 3 直接從 $b_0$ 的公式就看得出來？</p></div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.13–14</div>
+  <div class="notes">過原點迴歸殘差和一般不為 0（Lecture 03 的倉庫例題 Σeᵢ=22.72），這裡只提一句。性質 3 適合讓學生自己推。</div>
+</section>
+
+<!-- S23 MSE -->
+<section class="slide" data-spec="S23">
+  <div class="kicker">Error Variance</div>
+  <h2>估計 $\sigma^2$：為什麼除以 $n-2$？</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:12px">
+    <div class="formula sm">$s^2=\dfrac{\sum(Y_i-\bar Y)^2}{n-1}\ \longrightarrow\ s^2=MSE=\dfrac{\sum e_i^2}{n-2}=\dfrac{SSE}{n-2}$</div>
+    <div style="display:flex;gap:36px;flex:1;min-height:0">
+      <div class="col" style="flex:1.4">
+        <ul class="small">
+          <li>只看 $Y$：用 $\bar Y$ 估平均，少 1 個自由度</li>
+          <li>迴歸：用 $\hat Y_i$ 取代 $\bar Y$，估了 2 個參數，<span class="hl">少 2 個</span></li>
+          <li>$MSE$ 是 $\sigma^2$ 的不偏估計，$s=\sqrt{MSE}$</li>
+          <li>Toluca：$SSE=54{,}825$，$MSE=54{,}825/23=2{,}384$</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="card key">
+          <h3>📌 Toluca 的 $s$</h3>
+          <div class="big-number">48.8 小時</div>
+          <p class="small">任一批量下，工時分配的標準差估計</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.15</div>
+  <div class="notes">s 的單位和 Y 相同，可以解讀成「觀測值通常離配適線多遠」。E(MSE)=σ² 的證明在 Lecture 03。</div>
+</section>
+
+<!-- S24 練習 3 -->
+<section class="slide" data-spec="S24">
+  <div class="kicker">Exercise 3 <span class="badge">補充題</span><span class="badge gray">難度 2</span></div>
+  <h2>練習 3：MSE 與自由度</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <ol class="small" style="padding-left:1.4em">
+        <li>練習 2 的殘差 −0.8, 0.6, 1.0, −0.6, −0.2：求 $SSE$、$MSE$、$s$</li>
+        <li>$n=12$、$SSE=300$：求 $s^2$、$s$ 與 $\hat\sigma^2$</li>
+        <li>哪一個是不偏的？</li>
+      </ol>
+      <div class="card key"><h3>✏️ 提示</h3><p class="small">$\hat\sigma^2=SSE/n=\tfrac{n-2}{n}s^2$（第 5 章）</p></div>
+    </div>
+    <div class="col">
+      <details>
+        <summary>看答案</summary>
+        <p style="font-size:18px"><b>1.</b> $SSE=2.4$、$MSE=0.8$、$s\approx0.894$</p>
+        <p style="font-size:18px"><b>2.</b> $s^2=30$、$s\approx5.48$；$\hat\sigma^2=300/12=25=\tfrac{10}{12}\times30$</p>
+        <p style="font-size:18px"><b>3.</b> $s^2$ 不偏；$\hat\sigma^2$ 有偏，$n$ 大時差異很小</p>
+      </details>
+    </div>
+  </div>
+  <div class="src">練習：wiki exercises/error-variance-01（補充題）　·　出處：Lecture 02 p.15, 19</div>
+  <div class="notes">第 2、3 小題會在第 5 章再回來對照；可以先做第 1 小題，第 5 章結束再做 2、3。</div>
+</section>
+
+<!-- S25 章節 05 -->
+<section class="slide section-slide" data-spec="S25">
+  <div class="stext">
+    <div class="num">05</div>
+    <h2>常態誤差與最大概似</h2>
+    <div class="en-title">Normal Errors and Maximum Likelihood</div>
+  </div>
+  <figure class="art"><img src="../../assets/premium_vector-1720635001192-36480224954f.avif" alt="文具與 A+ 貼紙"></figure>
+</section>
+
+<!-- S26 常態誤差模型 -->
+<section class="slide" data-spec="S26">
+  <div class="kicker">Normal Error Model</div>
+  <h2>常態誤差模型</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.2">
+      <div class="formula sm">$\varepsilon_i\sim N(0,\sigma^2)\ \Rightarrow\ Y_i\sim N(\beta_0+\beta_1X_i,\ \sigma^2)$</div>
+      <ul class="small">
+        <li>信賴區間、檢定需要<b>完整的</b>誤差分配</li>
+        <li>選常態是因為數學最簡單</li>
+        <li>常態下「不相關」推得「獨立」，所以 $\varepsilon_i$ 是 iid</li>
+      </ul>
+      <div class="card dark"><h3>⚠️ 常見誤解</h3><p class="small">「不相關就代表獨立。」<span class="muted">✗ 只有常態等特殊情況才成立</span></p></div>
+    </div>
+    <div class="col figure">
+      <svg id="fig-normal" width="440" height="320"></svg>
+      <div class="caption">每個 $X$ 上一條常態曲線（示意圖，仿 ALSM Fig. 1.6）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.16　·　圖為示意圖</div>
+  <div class="notes">並列兩層假設：「三條基本假設」能做估計；「＋常態」才能做推論。偏離常態的影響和診斷留到 Lecture 03、04。</div>
+</section>
+
+<!-- S27 最大概似 -->
+<section class="slide" data-spec="S27">
+  <div class="kicker">Maximum Likelihood</div>
+  <h2>最大概似：哪個 $\mu$ 比較合理？</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.1">
+      <ul class="small">
+        <li>常態母體，$\sigma=10$；觀測 250、265、259</li>
+        <li>🤔 $\mu=230$ 還是 $\mu=259$？</li>
+        <li>概似 $L(\mu)=f_1f_2f_3$：<span class="hl">資料固定，參數變動</span></li>
+      </ul>
+      <table class="compact">
+        <tr><th></th><th class="num">$\mu=230$</th><th class="num">$\mu=259$</th></tr>
+        <tr><td>$f_1$（250）</td><td class="num">0.005399</td><td class="num">0.026609</td></tr>
+        <tr><td>$f_2$（265）</td><td class="num">0.000087</td><td class="num">0.033322</td></tr>
+        <tr><td>$f_3$（259）</td><td class="num">0.000595</td><td class="num">0.039894</td></tr>
+      </table>
+      <details>
+        <summary>揭曉：$L(\mu)$</summary>
+        <p style="font-size:18px">$L(230)=0.279\times10^{-9}$，$L(259)=0.0000354$</p>
+        <p style="font-size:18px">$L(259)$ 遠大於 $L(230)$：<b>$\mu=259$ 和資料一致得多</b></p>
+      </details>
+    </div>
+    <div class="col figure">
+      <svg id="fig-mle" width="440" height="300"></svg>
+      <div class="caption">灰：$\mu=230$；桃紅：$\mu=259$；虛線為三個觀測值（示意圖）</div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.17–18（p.18 第一列的 f₂ 依 wiki 更正為 f₁）　·　圖為示意圖</div>
+  <div class="notes">分清「機率」和「概似」：資料固定、讓參數變動。講義 p.18 第一列把 f1 印成 f2，這裡用更正後的寫法。</div>
+</section>
+
+<!-- S28 LS = ML -->
+<section class="slide" data-spec="S28">
+  <div class="kicker">MLE for Normal SLR</div>
+  <h2>常態下，最小平方 ＝ 最大概似</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col" style="flex:1.8">
+      <ol class="steps math">
+        <li>$\log L=-\dfrac n2\log2\pi-\dfrac n2\log\sigma^2-\dfrac{1}{2\sigma^2}\sum(Y_i-\beta_0-\beta_1X_i)^2$</li>
+        <li>對 $\beta_0,\beta_1$ 微分 → 正規方程式 → $\hat\beta_0=b_0,\ \hat\beta_1=b_1$</li>
+        <li>對 $\sigma^2$ 微分 → $\hat\sigma^2=\dfrac{\sum e_i^2}{n}=\dfrac{n-2}{n}s^2$</li>
+      </ol>
+      <ul class="small">
+        <li>不論 $\sigma^2$ 多少，$\log L$ 最大都發生在平方和最小處</li>
+        <li>$\hat\sigma^2$ <span class="hl">有偏</span>，實務上用 $MSE$</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card"><h3>🔍 解讀</h3><p class="small">$n=5$ 時 $\tfrac{n-2}{n}=0.6$；$n=100$ 時 $0.98$</p></div>
+    </div>
+  </div>
+  <div class="src">出處：Lecture 02 p.18–19</div>
+  <div class="notes">重點不在推導細節，而在結論：兩種方法給同樣的 b0、b1，但 σ² 的分母不同。做完這頁可以回頭做練習 3 的第 2、3 小題。</div>
+</section>
+
+<!-- S29 回顧 -->
+<section class="slide recap" data-spec="S29">
+  <div class="kicker">Recap</div>
+  <h2>重點回顧</h2>
+  <div class="rule"></div>
+  <div class="body" style="flex-direction:column;gap:18px">
+    <div class="grid3">
+      <div class="card"><h3>01 模型</h3><p>$Y_i=\beta_0+\beta_1X_i+\varepsilon_i$，線性指對參數線性</p></div>
+      <div class="card"><h3>02 最小平方</h3><p>讓 $\sum e_i^2$ 最小：$b_1=S_{XY}/S_{XX}$</p></div>
+      <div class="card"><h3>03 性質</h3><p>不偏，$Var(b_1)=\sigma^2/S_{XX}$，是 BLUE</p></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>04 殘差與 MSE</h3><p>殘差看得到，$MSE=SSE/(n-2)$</p></div>
+      <div class="card key"><h3>05 常態與 ML</h3><p>常態下 LS ＝ ML；下一份：<b>SLR 的推論</b></p></div>
+    </div>
+  </div>
+  <div class="src">內容整理自 wiki：sources/lecture-02 及相關頁面</div>
+  <div class="notes">預告 Lecture 03：有了常態假設，就能做 β₁ 的 t 檢定與信賴區間。</div>
+</section>
+
+</div></div>
+<script>
+/* ---------- 本份簡報的圖（配色：資料點 Ink、主要線條桃紅、次要線條灰） ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+const {C, el, rng, gauss, axes} = SK;
+const txt = (s,x,y,t,o={}) => el(s,'text',Object.assign({x,y,'font-size':13,fill:C.g500},o),t);
+function fit(xs,ys){ const n=xs.length, mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+  let sxy=0,sxx=0; xs.forEach((x,i)=>{sxy+=(x-mx)*(ys[i]-my); sxx+=(x-mx)**2;}); const b1=sxy/sxx; return [my-b1*mx,b1]; }
+function sideNormal(s,x0,mu,sd,h,fillOp){ let d='';
+  for (let t=-3*sd;t<=3*sd;t+=sd/10){ const w=h*Math.exp(-(t*t)/(2*sd*sd)); d+=(d?'L':'M')+(x0+w)+','+(mu+t); }
+  el(s,'path',{d,fill:C.g200,'fill-opacity':fillOp||.7,stroke:C.g500,'stroke-width':1.5}); }
+
+/* S05 電器經銷商 */
+(function(){
+  const s=document.getElementById('fig-ydist'); axes(s,50,270,480,20,'','Y 工時'); txt(s,480,262,'X 標案件數',{'text-anchor':'end'});
+  const X=x=>50+(x-10)*420/80, Y=y=>270-(y-30)*230/170;
+  el(s,'line',{x1:X(18),y1:Y(9.5+2.1*18),x2:X(85),y2:Y(9.5+2.1*85),stroke:C.pink,'stroke-width':3});
+  [25,45,70].forEach(x=>sideNormal(s,X(x),Y(9.5+2.1*x),16,42));
+  el(s,'circle',{cx:X(45),cy:Y(104),r:5,fill:C.pink});
+  el(s,'circle',{cx:X(45),cy:Y(108),r:5.5,fill:C.ink});
+  txt(s,X(45)-10,Y(108)-6,'Yᵢ = 108',{'text-anchor':'end',fill:C.ink,'font-size':14});
+  txt(s,X(45)-10,Y(104)+30,'E(Yᵢ) = 104',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  txt(s,X(80),Y(9.5+2.1*80)+26,'E(Y) = 9.5 + 2.1X',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  [20,40,60,80].forEach(x=>txt(s,X(x),288,x,{'text-anchor':'middle'}));
+})();
+
+/* S10 兩條線的殘差平方 */
+(function(){
+  const s=document.getElementById('fig-ls');
+  const xs=[1,2,3,4,5,6], ys=[2.2,3.8,3.1,5.0,4.6,6.1];
+  const [a,b]=fit(xs,ys);
+  const panels=[{ox:20,line:[1.2,0.55],col:C.g500,lab:'線 A'},{ox:280,line:[a,b],col:C.pink,lab:'線 B（LS）'}];
+  panels.forEach(p=>{
+    const X=x=>p.ox+20+(x-0.3)*36, Y=y=>255-y*32;
+    el(s,'line',{x1:p.ox+20,y1:255,x2:p.ox+250,y2:255,stroke:C.g400,'stroke-width':1.2});
+    el(s,'line',{x1:p.ox+20,y1:255,x2:p.ox+20,y2:20,stroke:C.g400,'stroke-width':1.2});
+    let ss=0;
+    xs.forEach((x,i)=>{ const f=p.line[0]+p.line[1]*x, e=ys[i]-f; ss+=e*e;
+      const side=Math.abs(e)*32, top=Math.min(Y(ys[i]),Y(f));
+      el(s,'rect',{x:X(x),y:top,width:side,height:side,fill:p.col===C.pink?C.pinkSoft:C.g200,stroke:p.col,'stroke-width':1,'fill-opacity':.8}); });
+    el(s,'line',{x1:X(0.5),y1:Y(p.line[0]+p.line[1]*0.5),x2:X(6.4),y2:Y(p.line[0]+p.line[1]*6.4),stroke:p.col,'stroke-width':3});
+    xs.forEach((x,i)=>el(s,'circle',{cx:X(x),cy:Y(ys[i]),r:5,fill:C.ink}));
+    txt(s,p.ox+30,286,p.lab+'：平方和 '+ss.toFixed(2),{fill:p.col===C.pink?C.pinkInk:C.g700,'font-size':14});
+  });
+})();
+
+/* S12 Toluca 配適線 */
+(function(){
+  const s=document.getElementById('fig-toluca'); axes(s,60,290,450,20,'','工時 Y'); txt(s,450,282,'批量 X',{'text-anchor':'end'});
+  const X=x=>60+x*380/130, Y=y=>290-y*260/600;
+  el(s,'line',{x1:X(20),y1:Y(62.37+3.5702*20),x2:X(120),y2:Y(62.37+3.5702*120),stroke:C.pink,'stroke-width':3.5});
+  el(s,'line',{x1:X(70),y1:Y(312.28),x2:X(70),y2:290,stroke:C.g400,'stroke-dasharray':'4 4'});
+  el(s,'circle',{cx:X(70),cy:Y(312.28),r:6,fill:C.ink});
+  txt(s,X(70)+10,Y(312.28)+20,'(X̄, Ȳ) = (70, 312.28)',{fill:C.ink,'font-size':14});
+  txt(s,X(120),Y(62.37+3.5702*120)-10,'Ŷ = 62.37 + 3.5702X',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+  [0,20,40,60,80,100,120].forEach(x=>txt(s,X(x),308,x,{'text-anchor':'middle'}));
+  [0,200,400,600].forEach(y=>txt(s,52,Y(y)+4,y,{'text-anchor':'end'}));
+})();
+
+/* S17 X 集中 vs. 分散 */
+(function(){
+  const s=document.getElementById('fig-spread'), r=rng(21);
+  [[18,'X 集中',[4,4.5,5,5.5,6,4.25,5.75]],[290,'X 分散',[1,2.5,4,5,6,7.5,9]]].forEach(([ox,lab,xs])=>{
+    const X=x=>ox+15+x*25, Y=y=>210-y*17;
+    el(s,'line',{x1:ox+15,y1:210,x2:ox+265,y2:210,stroke:C.g400,'stroke-width':1.2});
+    el(s,'line',{x1:ox+15,y1:210,x2:ox+15,y2:15,stroke:C.g400,'stroke-width':1.2});
+    for (let k=0;k<12;k++){ const ys=xs.map(x=>1.5+0.9*x+gauss(r)*1.1); const [a,b]=fit(xs,ys);
+      el(s,'line',{x1:X(0.2),y1:Y(a+b*0.2),x2:X(9.8),y2:Y(a+b*9.8),stroke:C.pink,'stroke-width':1.3,opacity:.45}); }
+    el(s,'line',{x1:X(0.2),y1:Y(1.5+0.9*0.2),x2:X(9.8),y2:Y(1.5+0.9*9.8),stroke:C.ink,'stroke-width':2.2,'stroke-dasharray':'6 4'});
+    xs.forEach(x=>el(s,'line',{x1:X(x),y1:206,x2:X(x),y2:214,stroke:C.ink,'stroke-width':2.5}));
+    txt(s,ox+140,238,lab,{'text-anchor':'middle',fill:C.ink,'font-size':15});
+  });
+})();
+
+/* S19 中心化 */
+(function(){
+  const s=document.getElementById('fig-center'), r=rng(5);
+  const xs=[], ys=[]; for (let i=0;i<14;i++){ const x=5.5+r()*4; xs.push(x); ys.push(1+0.8*x+gauss(r)*0.6); }
+  const [a,b]=fit(xs,ys), mx=xs.reduce((p,q)=>p+q)/xs.length, my=ys.reduce((p,q)=>p+q)/ys.length;
+  [[15,0,'原座標：截距在 X = 0'],[285,mx,'中心化：縱軸移到 X̄']].forEach(([ox,x0,lab])=>{
+    const X=x=>ox+20+x*23, Y=y=>200-y*17;
+    el(s,'line',{x1:ox+10,y1:200,x2:ox+255,y2:200,stroke:C.g400,'stroke-width':1.2});
+    el(s,'line',{x1:X(x0),y1:205,x2:X(x0),y2:15,stroke:C.ink,'stroke-width':2});
+    el(s,'line',{x1:X(0),y1:Y(a),x2:X(10.3),y2:Y(a+b*10.3),stroke:C.pink,'stroke-width':2.5});
+    xs.forEach((x,i)=>el(s,'circle',{cx:X(x),cy:Y(ys[i]),r:4,fill:C.ink,opacity:.8}));
+    const iy=a+b*x0; el(s,'circle',{cx:X(x0),cy:Y(iy),r:6,fill:C.pink});
+    if (x0) txt(s,X(x0)-14,Y(iy)+44,'截距 = Ȳ',{'text-anchor':'end',fill:C.pinkInk,'font-size':14}); else txt(s,X(x0)+10,Y(iy)-12,'截距 = b₀',{fill:C.pinkInk,'font-size':14});
+    txt(s,ox+135,236,lab,{'text-anchor':'middle',fill:C.ink,'font-size':14});
+  });
+})();
+
+/* S21 Toluca 第 1 筆的殘差 */
+(function(){
+  const s=document.getElementById('fig-resid'); axes(s,60,290,410,20,'','工時 Y'); txt(s,410,282,'批量 X',{'text-anchor':'end'});
+  const X=x=>60+x*340/130, Y=y=>290-y*260/600;
+  el(s,'line',{x1:X(20),y1:Y(62.37+3.5702*20),x2:X(120),y2:Y(62.37+3.5702*120),stroke:C.g500,'stroke-width':3});
+  el(s,'line',{x1:X(80),y1:Y(399),x2:X(80),y2:Y(347.98),stroke:C.pink,'stroke-width':4});
+  el(s,'circle',{cx:X(80),cy:Y(347.98),r:5.5,fill:C.g500});
+  el(s,'circle',{cx:X(80),cy:Y(399),r:6,fill:C.ink});
+  txt(s,X(80)-12,Y(399)-6,'Y₁ = 399',{'text-anchor':'end',fill:C.ink,'font-size':14});
+  txt(s,X(80)+12,Y(347.98)+16,'Ŷ₁ = 347.98',{fill:C.g700,'font-size':14});
+  txt(s,X(80)-12,Y(372)+6,'e₁ = 51.02',{'text-anchor':'end',fill:C.pinkInk,'font-size':15,'font-weight':700});
+  [0,40,80,120].forEach(x=>txt(s,X(x),308,x,{'text-anchor':'middle'}));
+  [0,200,400,600].forEach(y=>txt(s,52,Y(y)+4,y,{'text-anchor':'end'}));
+})();
+
+/* S26 常態誤差 */
+(function(){
+  const s=document.getElementById('fig-normal'); axes(s,40,295,420,20,'X','Y');
+  const line=x=>265-(x-60)*0.5;
+  el(s,'line',{x1:55,y1:line(55),x2:410,y2:line(410),stroke:C.pink,'stroke-width':3.5});
+  [120,230,340].forEach(x=>{ sideNormal(s,x,line(x),20,50,.75); el(s,'circle',{cx:x,cy:line(x),r:5,fill:C.pink}); });
+  txt(s,405,line(405)-12,'E(Y) = β₀ + β₁X',{'text-anchor':'end',fill:C.pinkInk,'font-size':14});
+})();
+
+/* S27 兩個 μ 的常態曲線 */
+(function(){
+  const s=document.getElementById('fig-mle'); axes(s,30,255,425,20,'Y','');
+  const X=v=>30+(v-200)*390/90, H=d=>255-d*5600;
+  const pdf=(v,m)=>Math.exp(-((v-m)**2)/200)/(10*Math.sqrt(2*Math.PI));
+  [[230,C.g500],[259,C.pink]].forEach(([m,c])=>{ let d=''; for(let v=200;v<=290;v+=0.5) d+=(d?'L':'M')+X(v)+','+H(pdf(v,m));
+    el(s,'path',{d,fill:'none',stroke:c,'stroke-width':3}); });
+  [250,265,259].forEach((v,i)=>{ el(s,'line',{x1:X(v),y1:255,x2:X(v),y2:H(pdf(v,259)),stroke:C.ink,'stroke-width':1.3,'stroke-dasharray':'4 3'});
+    el(s,'circle',{cx:X(v),cy:255,r:5,fill:C.ink}); el(s,'circle',{cx:X(v),cy:H(pdf(v,259)),r:4,fill:C.pink});
+    el(s,'circle',{cx:X(v),cy:H(pdf(v,230)),r:4,fill:C.g500}); });
+  [200,230,259,290].forEach(v=>txt(s,X(v),274,v,{'text-anchor':'middle'}));
+})();
+});
+</script>
+</body>
+</html>
